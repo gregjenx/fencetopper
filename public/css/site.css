@@ -250,15 +250,11 @@ p { margin: 0; }
 .hero-spec { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .92rem; color: var(--muted); }
 .hero-spec { gap: 8px; }
 .hero-spec span { font-variant-numeric: tabular-nums; }
-.hero h1 { font-size: clamp(2rem, 4.2vw, 3rem); }
-.br-md { display: none; }
 @media (min-width: 860px) {
   .hero { padding-block: 48px 64px; }
   .hero-grid { grid-template-columns: 1fr 1.15fr; gap: 48px; }
   .hero-ctas { grid-template-columns: 1fr 1fr; }
   .hero-links { justify-content: flex-start; }
-  .hero h1 { font-size: clamp(1.875rem, 3.6vw, 2.7rem); }
-  .br-md { display: inline; }
 }
 
 /* Feature tiles */
