@@ -203,7 +203,7 @@ p { margin: 0; }
 .link:hover { color: var(--action); }
 
 /* Announcement + header */
-.announce { background: var(--green); color: var(--on-green); text-align: center; font-weight: 600; font-size: .95rem; padding: 8px var(--gutter); }
+.announce { background: var(--green); color: var(--on-green); text-align: center; font-weight: 600; font-size: .95rem; padding: 8px var(--gutter); text-transform: uppercase; }
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .site-header .header-bar { display: flex; align-items: center; gap: 12px; min-height: 64px; }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 1.45rem/1 var(--font-display); letter-spacing: -0.03em; }
