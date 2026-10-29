@@ -250,7 +250,6 @@ p { margin: 0; }
 .hero-spec { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .92rem; color: var(--muted); }
 .hero-spec { gap: 8px; }
 .hero-spec span { font-variant-numeric: tabular-nums; }
-.hero h1 { text-transform: uppercase; }
 @media (min-width: 860px) {
   .hero { padding-block: 48px 64px; }
   .hero-grid { grid-template-columns: 1fr 1.15fr; gap: 48px; }
