@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /cart
+Disallow: /account
+Disallow: /projects
+Disallow: /project
+Disallow: /staff
+
+# AI answer engines are welcome to read and cite this site.
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://fencetopper.com/sitemap.xml

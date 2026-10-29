@@ -1,0 +1,226 @@
+---
+import Base from '../layouts/Base.astro';
+import { faqs, extenderOptions, heightList } from '../data/site';
+
+const extenderFaqs = faqs.filter((f) => f.topic === 'extenders');
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: extenderFaqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+};
+
+const groups = [
+  { id: 'round', title: 'Round steel posts' },
+  { id: 'wood', title: 'Wood fences and 4x4 posts' },
+  { id: 'other', title: 'Something else' },
+];
+// Cut-length reference on a level run: tube = topper height + 1 in, for every height we sell.
+const cuts = heightList;
+---
+<Base title="Fence Extenders: Options for Your Fence Topper" path="/fence-extenders" breadcrumb="Fence extenders" schema={[faqLd]}
+  description="FenceTopper mounts on extension posts you or your contractor add to your existing fence posts. Compare extender options for round steel and wood posts, cut lengths and leveling.">
+  <section class="page-head wrap">
+    <span class="eyebrow">Customer-supplied posts</span>
+    <h1>Fence extenders</h1>
+    <p class="lead">FenceTopper mounts on extension posts that you or your contractor add to your existing fence posts. Here are the options by fence type. Pick the one that fits your fence.</p>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap split">
+      <div class="prose">
+        <h2>What’s a fence extender?</h2>
+        <p>A fence extender is a post that attaches to an existing fence post and rises above the top of the fence. Your FenceTopper is strapped to these extenders, so they set where the panel sits and how tall it stands.</p>
+        <p>Add one on every fence post the topper spans, including both ends of each run. Each extender should rise about 1 in above the topper.</p>
+      </div>
+      <figure class="panel ext-figure">
+        <svg viewBox="0 0 360 260" role="img" aria-labelledby="ext-diag-title">
+          <title id="ext-diag-title">Side view of an existing fence post with an extender rising above the fence, the topper strapped to it, and the extender ending about 1 inch above the topper</title>
+          <rect x="0" y="0" width="360" height="260" rx="10" fill="var(--sage)" />
+          <rect x="30" y="160" width="300" height="90" fill="#b07a4a" />
+          <rect x="164" y="150" width="32" height="100" fill="#8d5f37" />
+          <rect x="172" y="44" width="16" height="140" rx="3" fill="var(--ink)" />
+          <rect x="30" y="62" width="142" height="90" fill="#3A3C3F" />
+          <rect x="188" y="62" width="142" height="90" fill="#3A3C3F" />
+          <rect x="166" y="76" width="28" height="8" rx="2" fill="#111214" />
+          <rect x="166" y="130" width="28" height="8" rx="2" fill="#111214" />
+          <path d="M206 44 H226 M206 62 H226 M216 44 V62" stroke="var(--ink)" stroke-width="2" />
+          <text x="232" y="58" font-size="12" font-weight="700" fill="var(--ink)" font-family="Figtree, sans-serif">about 1 in</text>
+          <text x="40" y="34" font-size="13" font-weight="700" fill="var(--ink)" font-family="Figtree, sans-serif">Extender</text>
+          <path d="M100 38 L170 52" stroke="var(--ink)" stroke-width="1.5" />
+          <text x="40" y="112" font-size="13" font-weight="700" fill="#ffffff" font-family="Figtree, sans-serif">Topper</text>
+          <text x="40" y="200" font-size="13" font-weight="700" fill="#16202f" font-family="Figtree, sans-serif">Existing fence</text>
+        </svg>
+        <figcaption class="muted">The extender attaches to your existing post. The topper straps to it, with about 1 in of extender above. Not to scale.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section band" id="options">
+    <div class="wrap ext-options">
+      <div class="section-head">
+        <h2>Extender options</h2>
+        <p class="muted">These are the options we’re testing now. Each one is still being tested, so choose the one that fits your fence and talk to us if you’re unsure. Seller links were checked in October 2026; prices and stock change.</p>
+      </div>
+      <div class="ext-filter" role="group" aria-label="Find your fence type">
+        <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="chip" data-filter="round" aria-pressed="false">Round steel posts</button>
+        <button type="button" class="chip" data-filter="wood" aria-pressed="false">Wood 4x4 posts</button>
+        <a class="chip" href="#option-custom">Something else</a>
+      </div>
+      {groups.map((g) => (
+        <div class="ext-group" data-group={g.id}>
+          <h3 class="ext-group-title">{g.title}</h3>
+          <ul class="ext-cards">
+            {extenderOptions.filter((o) => o.group === g.id).map((o) => (
+              <li class="panel extension-card" id={`option-${o.id}`}>
+                <div class="ext-art" aria-hidden="true">
+                  <svg viewBox="0 0 200 120">
+                    <rect width="200" height="120" rx="8" fill="var(--sage)" />
+                    {o.type === 'internal' && (<g>
+                      <rect x="84" y="62" width="32" height="58" fill="var(--muted)" />
+                      <rect x="88" y="14" width="24" height="86" fill="var(--ink)" />
+                      <rect x="88" y="62" width="24" height="38" fill="var(--ink)" opacity=".35" />
+                      <text x="124" y="40" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Tube</text>
+                      <text x="124" y="92" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Locks inside</text>
+                    </g>)}
+                    {o.type === 'swaged' && (<g>
+                      <rect x="84" y="66" width="32" height="54" fill="var(--muted)" />
+                      <path d="M86 14 H114 V56 L110 62 V96 H90 V62 L86 56 Z" fill="var(--ink)" />
+                      <rect x="84" y="8" width="32" height="8" rx="3" fill="var(--ink)" />
+                      <circle cx="100" cy="74" r="3" fill="var(--sage)" />
+                      <text x="124" y="40" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Extension</text>
+                      <text x="124" y="80" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Screw or bolt</text>
+                    </g>)}
+                    {o.type === 'face' && (<g>
+                      <rect x="20" y="62" width="160" height="58" fill="#b07a4a" />
+                      <rect x="94" y="18" width="12" height="92" fill="var(--ink)" />
+                      <circle cx="100" cy="76" r="3" fill="#b07a4a" /><circle cx="100" cy="100" r="3" fill="#b07a4a" />
+                      <text x="114" y="40" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Leg</text>
+                      <text x="114" y="92" font-size="11" fill="#16202f" font-family="Figtree, sans-serif">Screwed on</text>
+                    </g>)}
+                    {o.type === 'side' && (<g>
+                      <rect x="70" y="56" width="36" height="64" fill="#8d5f37" />
+                      <rect x="108" y="14" width="18" height="100" fill="var(--ink)" />
+                      <rect x="98" y="70" width="34" height="5" fill="var(--muted)" />
+                      <rect x="98" y="96" width="34" height="5" fill="var(--muted)" />
+                      <text x="16" y="50" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">4x4 post</text>
+                      <text x="134" y="40" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Pipe</text>
+                      <text x="136" y="90" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Lag bolts</text>
+                    </g>)}
+                    {o.type === 'custom' && (<g>
+                      <rect x="84" y="62" width="32" height="58" fill="var(--muted)" />
+                      <rect x="88" y="14" width="24" height="50" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="5 4" />
+                      <text x="100" y="45" font-size="20" font-weight="700" text-anchor="middle" fill="var(--ink)" font-family="Figtree, sans-serif">?</text>
+                      <text x="124" y="40" font-size="11" fill="var(--ink)" font-family="Figtree, sans-serif">Your design</text>
+                    </g>)}
+                  </svg>
+                </div>
+                <div class="ext-card-head">
+                  <h4>{o.name}</h4>
+                  {o.group !== 'other' && <span class="state-badge info"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2" /><path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" /></svg>Being tested</span>}
+                </div>
+                <dl>
+                  <dt>Fits</dt><dd>{o.fits}</dd>
+                  <dt>Rise</dt><dd>{o.rise}</dd>
+                </dl>
+                <p class="muted">{o.note}</p>
+                {o.links.length > 0 && (
+                  <p class="ext-links">
+                    {o.links.map(([label, url]) => <a class="link" href={url} target="_blank" rel="noopener nofollow">{label}<span class="sr-only"> (opens in a new tab)</span></a>)}
+                    <span class="ext-checked">Checked Oct 2026</span>
+                  </p>
+                )}
+                {o.type === 'side' && <p class="ext-links"><span class="ext-checked">Built from standard pipe and lag bolts, so there’s no single seller.</span></p>}
+                <button type="button" class="btn btn-outline btn-block" data-choose={o.id} data-name={o.name}>Choose this in your project</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <p class="sr-only" id="ext-status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="section" id="installing">
+    <div class="wrap split ext-split">
+      <div class="prose">
+        <h2>Choosing and installing</h2>
+        <h3>Cut length on a level run</h3>
+        <p>When your post tops are level, cut each OZCO tube 1 in longer than the topper height. A 24 in topper uses a 25 in tube.</p>
+        <h3>When post tops aren’t level</h3>
+        <ol>
+          <li>Install the two end extenders and mark the top height you want on each.</li>
+          <li>Stretch a mason’s line tight between the two marks so it’s level.</li>
+          <li>Measure from the line down to each middle post top, and cut each middle extender to its own length.</li>
+        </ol>
+        <h3>Leave them a little long</h3>
+        <p>When in doubt, leave the extenders a few inches long. Test-fit the topper, take it off and cut again. The topper goes on and comes off easily while you fit it.</p>
+      </div>
+      <div class="table-wrap ext-cut">
+        <table>
+          <caption>OZCO tube length on a level run</caption>
+          <thead><tr><th scope="col">Topper height</th><th scope="col">Tube length</th></tr></thead>
+          <tbody>
+            {cuts.map((h) => <tr><td>{h} in</td><td>{h + 1} in</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap">
+      <div class="note alert ext-responsibility">
+        <strong>Your responsibility</strong>
+        <p>You or your contractor choose, buy and install the extensions. A taller fence catches more wind. Make sure your existing posts, footings and fasteners can carry it, and check your local height rules. FenceTopper doesn’t certify structure, wind load or code compliance.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Fence extender questions</h2>
+      <div class="faq">
+        {extenderFaqs.map((f) => <details><summary>{f.q}</summary><p>{f.a}</p></details>)}
+      </div>
+      <div class="ext-cta">
+        <a class="btn btn-primary" href="/shop">Get my price</a>
+        <button class="btn btn-outline" type="button" data-chat-open data-chat-prompt="Which extender fits my fence?">Ask a question</button>
+      </div>
+    </div>
+  </section>
+
+  <script slot="scripts" is:inline>
+    document.addEventListener('DOMContentLoaded', function () {
+      var chips = document.querySelectorAll('.ext-filter [data-filter]');
+      var groups = document.querySelectorAll('.ext-group');
+      chips.forEach(function (c) {
+        c.addEventListener('click', function () {
+          var f = c.dataset.filter;
+          chips.forEach(function (x) { x.setAttribute('aria-pressed', String(x === c)); });
+          groups.forEach(function (g) { g.hidden = !(f === 'all' || g.dataset.group === f); });
+        });
+      });
+      var status = document.getElementById('ext-status');
+      var FT = window.FT;
+      function paint(id) {
+        document.querySelectorAll('[data-choose]').forEach(function (b) {
+          var on = b.dataset.choose === id;
+          b.textContent = on ? 'Chosen for your project' : 'Choose this in your project';
+          b.setAttribute('aria-pressed', String(on));
+        });
+      }
+      // Until the Builder ships, the choice is kept on this device and carried into the saved project.
+      var saved = FT && FT.store.get('extender', null);
+      if (saved) paint(saved.id);
+      document.querySelectorAll('[data-choose]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var pick = { id: b.dataset.choose, name: b.dataset.name };
+          if (FT) { FT.store.set('extender', pick); FT.toast('Saved: ' + pick.name + '. It goes into your project when you build your topper.'); }
+          status.textContent = pick.name + ' chosen for your project.';
+          paint(pick.id);
+        });
+      });
+    });
+  </script>
+</Base>

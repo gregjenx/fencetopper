@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import { assetVersion } from '../data/site';
+---
+<Base title="Rates" path="/staff-rates" noindex variant="staff" description="FenceTopper dated rate versions.">
+  <section class="wrap staff-page">
+    <div class="staff-title"><h1>Rates</h1><p class="muted">Each version starts on its effective date. Every estimate records the version it used, so older estimates keep their rates.</p></div>
+    <div id="staff-rates"></div>
+  </section>
+  <Fragment slot="scripts">
+    <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>
+    <script is:inline src={`/js/staff.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

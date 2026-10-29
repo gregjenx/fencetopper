@@ -1,0 +1,33 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { brand } from '../data/site';
+---
+<Base title="Support" path="/support" breadcrumb="Support"
+  description="Get help measuring your fence, choosing a FenceTopper height and color, and installing it. Chat with our assistant or contact our team.">
+  <section class="page-head wrap">
+    <span class="eyebrow">Support</span>
+    <h1>How can we help?</h1>
+    <p class="lead">Our assistant answers measuring, fit, color and installation questions right away and can price your fence.</p>
+  </section>
+  <section class="section-tight">
+    <div class="wrap split" style="align-items:start">
+      <section class="chat chat-inline" aria-label="FenceTopper help chat" data-chat="inline" style="max-width:none">
+        <div class="chat-head"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 690.0 491.0" class="logo-mark on-green" aria-hidden="true"><rect width="690" height="491" class="ft-box"/><g transform="translate(117.5 130)"><rect x="0" y="0" width="455" height="52" class="ft-mark"/><rect x="0" y="0" width="58" height="231" class="ft-mark"/><rect x="0" y="86" width="157" height="52" class="ft-mark"/><rect x="259" y="0" width="57" height="231" class="ft-mark"/></g></svg><div>FenceTopper help<small>Measuring, fit, color and installation</small></div></div>
+        <div class="chat-log" data-chat-log aria-live="polite" style="min-height:300px;max-height:460px"></div>
+        <div class="chips" data-chat-chips></div>
+        <form class="chat-form" data-chat-form>
+          <label class="sr-only" for="chat-input-support">Message</label>
+          <input id="chat-input-support" type="text" placeholder="Ask a question…" autocomplete="off" />
+          <button type="submit" aria-label="Send"><Icon name="send" width="20" height="20" /></button>
+        </form>
+      </section>
+      <div style="display:grid;gap:12px">
+        <a class="panel" href="/measure" style="text-decoration:none"><h3>Measuring guide →</h3><p class="muted">Measure runs, corners and fence height.</p></a>
+        <a class="panel" href="/install" style="text-decoration:none"><h3>Installation guide →</h3><p class="muted">Seven steps with a drill and a level.</p></a>
+        <a class="panel" href="/faq" style="text-decoration:none"><h3>FAQ →</h3><p class="muted">Wind, corners, HOA rules and more.</p></a>
+        <div class="panel"><h3>Talk to a person</h3><p class="muted">Email <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a> with a photo of your fence, or call <a class="link" href={`tel:+1${brand.phone.replace(/\D/g, "")}`}>{brand.phone}</a>.</p></div>
+      </div>
+    </div>
+  </section>
+</Base>

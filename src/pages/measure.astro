@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import { brand, pricing } from '../data/site';
+
+const steps = [
+  { name: 'Sketch your fence from above', text: 'Draw the fence line as if you were looking down from the sky. Mark every end, every corner and every gate. Each straight stretch between them is one run.' },
+  { name: 'Measure each straight run', text: 'Run a tape along the top of the fence from end post to end post and write down the length in feet and inches. Stop at gate posts; the fence on each side of a gate is its own run.' },
+  { name: 'Split at corners and steps', text: 'Each run must be straight and level from end to end. Where the fence turns a corner or steps up or down, start a new run. Fence sections that follow a continuous slope are not currently supported.' },
+  { name: 'Measure your fence height', text: 'Measure from the ground to the top of the fence. Add the topper height you want to see the finished height, and check it against your city and HOA limits.' },
+  { name: 'Note your posts', text: `Note what your fence posts are made of (wood, vinyl or metal) and how far apart they are. The fence extenders that hold your topper attach to these posts.` },
+  { name: 'Enter your numbers', text: 'Type each run in feet and inches into the price builder, confirm each run is straight and level, and choose a height and color. It shows your total right away.' },
+];
+const howTo = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to measure your fence for a fence topper',
+  description: 'Measure each straight, level run of fence to the inch, split at corners and steps, and check fence height to order a FenceTopper privacy extension.',
+  tool: [{ '@type': 'HowToTool', name: 'Tape measure' }, { '@type': 'HowToTool', name: 'Notepad or phone' }],
+  step: steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.name, text: s.text, url: brand.url + '/measure#step-' + (i + 1) })),
+};
+---
+<Base title="How to Measure Your Fence for a Fence Topper" path="/measure" breadcrumb="Measuring guide" schema={[howTo]}
+  description="Step-by-step guide to measuring your fence for a FenceTopper: measure each straight, level run to the inch, check fence height and get an instant price.">
+  <section class="page-head wrap">
+    <span class="eyebrow">DIY measuring guide</span>
+    <h1>How to measure your fence.</h1>
+    <p class="lead">All you need is a tape measure. Measure each straight, level run of fence to the inch. That’s all the price builder needs.</p>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap split" style="align-items:start">
+      <ol class="steps">
+        {steps.map((s, i) => (
+          <li class="step" id={`step-${i + 1}`}><span class="step-num">{String(i + 1).padStart(2, '0')}</span><div><h3>{s.name}</h3><p>{s.text}</p></div></li>
+        ))}
+      </ol>
+      <div style="display:grid;gap:16px">
+        <figure class="panel" style="margin:0">
+          <svg viewBox="0 0 420 320" role="img" aria-labelledby="diag-title" style="width:100%;height:auto">
+            <title id="diag-title">Overhead sketch of an L-shaped fence with two runs, one corner and a gate</title>
+            <rect x="0" y="0" width="420" height="320" rx="10" fill="var(--sage)" />
+            <text x="20" y="30" font-size="13" font-weight="700" fill="var(--muted)" font-family="Figtree, sans-serif">LOOKING DOWN AT THE YARD</text>
+            <path d="M60 70 H360" stroke="var(--green)" stroke-width="8" stroke-linecap="round" />
+            <path d="M60 70 V200" stroke="var(--green)" stroke-width="8" stroke-linecap="round" />
+            <path d="M60 250 V280" stroke="var(--green)" stroke-width="8" stroke-linecap="round" />
+            <path d="M60 200 L95 228" stroke="var(--muted)" stroke-width="3" stroke-dasharray="5 4" />
+            <circle cx="60" cy="70" r="9" fill="var(--ink)" /><circle cx="360" cy="70" r="7" fill="var(--ink)" />
+            <circle cx="60" cy="200" r="7" fill="var(--ink)" /><circle cx="60" cy="250" r="7" fill="var(--ink)" /><circle cx="60" cy="280" r="7" fill="var(--ink)" />
+            <text x="210" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)" font-family="Figtree, sans-serif">Run 1 · 40 ft 6 in</text>
+            <text x="76" y="140" font-size="15" font-weight="700" fill="var(--ink)" font-family="Figtree, sans-serif">Run 2 · 18 ft 3 in</text>
+            <text x="108" y="236" font-size="13" fill="var(--muted)" font-family="Figtree, sans-serif">Gate: skip it</text>
+            <text x="76" y="272" font-size="13" fill="var(--muted)" font-family="Figtree, sans-serif">Run 3 · 4 ft</text>
+            <text x="76" y="96" font-size="13" fill="var(--green-ink)" font-weight="700" font-family="Figtree, sans-serif">Corner: new run</text>
+          </svg>
+          <figcaption class="muted" style="font-size:.92rem;margin-top:10px">This yard has three straight, level runs (40 ft 6 in, 18 ft 3 in and 4 ft) split by a corner and a gate. Total: 62 ft 9 in.</figcaption>
+        </figure>
+        <div class="note">
+          <strong>Measuring tips</strong>
+          <ul style="margin:8px 0 0;padding-left:1.2em;display:grid;gap:6px">
+            <li>If your fence steps down a hill, measure each level section as its own run.</li>
+            <li>Measure to the inch. The panel straps take up 4 to 6 in of slack.</li>
+            <li>Many cities cap backyard fences at 6 to 8 ft. Check before you order.</li>
+          </ul>
+        </div>
+        <a class="btn btn-primary btn-block" href="/shop">Enter my measurements</a>
+        <button class="btn btn-outline btn-block" type="button" data-chat-open data-chat-prompt="Help me measure">Measure with the assistant</button>
+      </div>
+    </div>
+  </section>
+</Base>

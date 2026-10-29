@@ -1,0 +1,179 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { brand, colors, faqs, specs } from '../data/site';
+
+const useCases = [
+  { img: 'backyard-brown', title: 'Backyards & patios', text: 'Screen out the view of the driveway, RV or the neighbor’s yard.', alt: 'Brown fence topper above a cedar fence beside a backyard patio' },
+  { img: 'deck-carbon', title: 'Decks & terraces', text: 'Block a neighbor’s raised deck from looking into your seating area.', alt: 'Carbon fence topper on a taupe composite fence beside a deck lounge' },
+  { img: 'window-view', title: 'Window privacy', text: 'Open the blinds again. The topper covers the line of sight into your rooms.', alt: 'View from a bedroom window of a carbon topper on a wood fence' },
+  { img: 'courtyard-carbon', title: 'City courtyards', text: 'Add height to a horizontal-slat fence in a tight urban lot.', alt: 'Carbon topper above a horizontal wood fence in a brick courtyard' },
+];
+const homeFaqs = faqs.slice(1, 5);
+const product = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'FenceTopper privacy fence extension',
+  brand: { '@type': 'Brand', name: brand.name },
+  description: brand.description,
+  image: [brand.url + '/img/hero-evergreen.webp', brand.url + '/img/construction.webp'],
+  color: colors.map((c) => c.name).join(', '),
+  additionalProperty: specs.map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
+};
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: homeFaqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+};
+---
+<Base title="Home" path="/" description={brand.description} schema={[product, faqLd]}>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1>Extend privacy to your backyard.</h1>
+        <p class="lead">Add privacy where your existing fence falls short. Measure online, choose a color, and order a topper designed for DIY installation.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="/shop">Order Now</a>
+          <a class="btn btn-outline" href="/visualizer">Try the Visualizer</a>
+        </div>
+        <div class="hero-links">
+          <a class="link" href="/shop">Get My Price</a>
+          <a class="link" href="/measure">DIY Measuring Guide</a>
+        </div>
+        <div class="hero-spec" aria-label="Product options">
+          <span>12 to 24 in tall</span><span>4 colors</span><span>Fits your existing fence</span>
+        </div>
+      </div>
+      <div class="hero-img">
+        <img src="/img/hero-evergreen.webp" srcset="/img/hero-evergreen-800.webp 800w, /img/hero-evergreen.webp 1600w" sizes="(min-width: 860px) 55vw, 100vw" width="1600" height="1067" alt="Evergreen FenceTopper mesh panel installed above a gray wood fence in a shaded garden" fetchpriority="high" />
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-label="Why FenceTopper">
+    <div class="wrap">
+      <div class="features">
+        <div class="feature"><Icon name="ruler" />Easy to measure</div>
+        <div class="feature"><Icon name="cart" />Order online</div>
+        <div class="feature"><Icon name="sun" />Commercial shade construction</div>
+        <div class="feature"><Icon name="truck" />Ships to your door</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head center">
+        <h2>More privacy. Inside and out.</h2>
+        <p class="lead" style="margin-inline:auto">See how a fence topper can create more comfortable outdoor and indoor spaces.</p>
+      </div>
+      <div class="cards">
+        {useCases.map((u) => (
+          <a class="card" href="/visualizer">
+            <img src={`/img/${u.img}-800.webp`} width="800" height="533" alt={u.alt} loading="lazy" />
+            <div class="card-body">
+              <span class="card-title">{u.title} →</span>
+              <span class="card-text">{u.text}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+      <figure class="before-after" style="margin-inline:0">
+        <img src="/img/window-before-after.webp" srcset="/img/window-before-after-800.webp 800w, /img/window-before-after.webp 1600w" sizes="(min-width: 1160px) 1128px, 100vw" width="1600" height="800" alt="Before: blinds closed against a neighbor’s view. After: blinds open with a fence topper blocking the sightline." loading="lazy" />
+        <figcaption>Before and after: an 18 in topper hides most of the neighbor’s window, so the blinds can stay open.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section band warm" id="visualize">
+    <div class="wrap viz-teaser">
+      <div class="viz-frame">
+        <img src="/img/carbon-garden-800.webp" srcset="/img/carbon-garden-800.webp 800w, /img/carbon-garden.webp 1600w" sizes="(min-width: 860px) 60vw, 100vw" width="1600" height="800" alt="Fence topper above a cedar fence beside raised garden beds" loading="lazy" />
+        <div class="viz-tint" id="viz-tint" aria-hidden="true"></div>
+        <a class="viz-upload" href="/visualizer"><Icon name="upload" width="20" height="20" />Upload your photo</a>
+      </div>
+      <div class="section-head" style="margin:0">
+        <h2>Picture it on your fence.</h2>
+        <p class="lead">Upload a photo to explore colors and preview the added privacy at any height from 12 to 24 inches.</p>
+        <div class="swatches" data-swatches="#viz-tint" style="margin-top:10px">
+          {colors.map((c, i) => (
+            <button class="swatch" type="button" data-color={c.id} data-hex={c.hex} aria-pressed={i === 0 ? 'true' : 'false'}>
+              <span class="swatch-chip" style={`background-color:${c.hex}`}></span>{c.name}
+            </button>
+          ))}
+        </div>
+        <a class="btn btn-primary btn-block" href="/visualizer" style="margin-top:10px">Try the Visualizer</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head center"><h2>Measure. Choose. Install.</h2></div>
+      <ol class="steps row">
+        <li class="step"><span class="step-num">01</span><div><h3>Measure your fence</h3><p>Follow the guide to measure each fence run, corners and post spacing.</p></div></li>
+        <li class="step"><span class="step-num">02</span><div><h3>Choose your topper</h3><p>Select your height and color. See your price before checkout.</p></div></li>
+        <li class="step"><span class="step-num">03</span><div><h3>Install it yourself</h3><p>Use the step-by-step guide with a drill and level, and get help when you need it.</p></div></li>
+      </ol>
+      <p style="text-align:center;margin-top:18px"><a class="link" href="/measure">Explore the DIY Guide</a></p>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="wrap split">
+      <div class="section-head" style="margin:0">
+        <h2>Need help choosing?</h2>
+        <p class="lead">Ask about measuring, product fit, color or installation. The assistant can price your fence in a few questions.</p>
+        <p class="muted" style="font-size:.95rem">Prefer a person? <a class="link" href="/contact">Send our team a photo of your fence</a>.</p>
+      </div>
+      <section class="chat chat-inline" aria-label="FenceTopper help chat" data-chat="inline">
+        <div class="chat-head"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 690.0 491.0" class="logo-mark on-green" aria-hidden="true"><rect width="690" height="491" class="ft-box"/><g transform="translate(117.5 130)"><rect x="0" y="0" width="455" height="52" class="ft-mark"/><rect x="0" y="0" width="58" height="231" class="ft-mark"/><rect x="0" y="86" width="157" height="52" class="ft-mark"/><rect x="259" y="0" width="57" height="231" class="ft-mark"/></g></svg><div>FenceTopper<small>Usually answers instantly</small></div></div>
+        <div class="chat-log" data-chat-log aria-live="polite" style="max-height:320px"></div>
+        <div class="chips" data-chat-chips></div>
+        <form class="chat-form" data-chat-form>
+          <label class="sr-only" for="chat-input-home">Message</label>
+          <input id="chat-input-home" type="text" placeholder="Text a message…" autocomplete="off" />
+          <button type="submit" aria-label="Send"><Icon name="send" width="20" height="20" /></button>
+        </form>
+      </section>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap split">
+      <img class="rounded" src="/img/construction-800.webp" srcset="/img/construction-800.webp 800w, /img/construction.webp 1536w" sizes="(min-width: 860px) 50vw, 100vw" width="1536" height="596" alt="FenceTopper construction: full panel assembly, outer post with strap fasteners, and inner post pocket" loading="lazy" />
+      <div class="section-head" style="margin:0">
+        <span class="eyebrow">How it’s built</span>
+        <h2>Commercial shade construction. Made for your space.</h2>
+        <p class="lead">Smooth woven outdoor mesh, tensioned between the posts above your fence. Fiberglass battens keep the edges straight and continuous webbing straps pull it tight.</p>
+        <a class="link" href="/product">Explore the construction</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap">
+      <div class="section-head"><h2>Common questions</h2></div>
+      <div class="faq">
+        {homeFaqs.map((f) => <details><summary>{f.q}</summary><p>{f.a}</p></details>)}
+      </div>
+      <p style="margin-top:16px"><a class="link" href="/faq">See all questions</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="cta-band">
+        <div class="cta-copy">
+          <h2>Feel more at home outside.</h2>
+          <p>Add privacy to the space you already love.</p>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="/shop">Order Now</a>
+            <a class="btn btn-ghost-light" href="/shop">Get My Price</a>
+          </div>
+        </div>
+        <img src="/img/courtyard-carbon-800.webp" width="800" height="533" alt="Courtyard patio screened by a carbon fence topper" loading="lazy" />
+      </div>
+    </div>
+  </section>
+</Base>

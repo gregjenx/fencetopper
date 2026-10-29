@@ -1,0 +1,39 @@
+---
+import Base from '../layouts/Base.astro';
+import { brand } from '../data/site';
+---
+<Base title="Contact" path="/contact" breadcrumb="Contact" description="Contact the FenceTopper team about your fence, an order or installation.">
+  <section class="page-head wrap"><span class="eyebrow">Contact</span><h1>Talk to our team</h1><p class="lead">Send a photo of your fence and we’ll recommend a height, color and parts list.</p></section>
+  <section class="section-tight">
+    <div class="wrap split" style="align-items:start">
+      <form class="panel" id="contact-form" novalidate>
+        <div class="field"><label for="c-name">Name</label><input id="c-name" type="text" autocomplete="name" required /></div>
+        <div class="field"><label for="c-email">Email</label><input id="c-email" type="email" autocomplete="email" required /></div>
+        <div class="field"><label for="c-zip">ZIP code</label><input id="c-zip" type="text" inputmode="numeric" autocomplete="postal-code" /></div>
+        <div class="field"><label for="c-msg">How can we help?</label><textarea id="c-msg" required placeholder="About 60 ft of 6 ft cedar fence, one corner. Neighbor’s deck looks into our patio."></textarea></div>
+        <div class="field"><label for="c-photo">Photo of your fence (optional)</label><input id="c-photo" type="file" accept="image/*" /></div>
+        <button class="btn btn-primary" type="submit">Send message</button>
+        <p class="note alert" id="contact-done" hidden>The form isn’t connected to an inbox yet, so this message was not sent. <span class="placeholder">Placeholder</span></p>
+      </form>
+      <div class="prose">
+        <h2 style="margin-top:0">Other ways to reach us</h2>
+        <p>Email: <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a></p>
+        <p>Phone: <a class="link" href={`tel:+1${brand.phone.replace(/\D/g, "")}`}>{brand.phone}</a></p>
+        <p>Or <button class="link" type="button" data-chat-open style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline">chat with the assistant</button> for an instant answer.</p>
+      </div>
+    </div>
+  </section>
+  <script is:inline slot="scripts">
+    document.getElementById('contact-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!this.reportValidity()) return;
+      var form = this, done = document.getElementById('contact-done'), endpoint = (window.FT_FORMS || {}).endpoint;
+      if (!endpoint) { done.hidden = false; return; }
+      var data = {}; Array.prototype.forEach.call(form.elements, function (el) { if (el.id && el.value && el.type !== 'submit') data[el.id.replace(/^c-/, '')] = el.value; });
+      data._subject = 'FenceTopper contact form';
+      fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); done.className = 'note'; done.textContent = 'Thanks. We got your message and will reply by email.'; done.hidden = false; form.reset(); })
+        .catch(function () { done.className = 'note alert'; done.textContent = 'We couldn’t send that. Check your connection and try again.'; done.hidden = false; });
+    });
+  </script>
+</Base>

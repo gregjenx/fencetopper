@@ -1,0 +1,16 @@
+---
+// Topper height stepper: minus / value / plus, any whole inch in the heights range.
+// Wired by FT.heightStepper() in public/js/site.js.
+import { heights } from '../data/site';
+interface Props { id: string; label?: string }
+const { id, label = 'Topper height' } = Astro.props;
+---
+<div class="field height-stepper" data-height-stepper>
+  <label for={id}>{label}</label>
+  <div class="stepper">
+    <button type="button" data-hstep="-1" aria-label="1 inch shorter">−</button>
+    <div class="unit-input"><input id={id} name={id} type="number" min={heights.min} max={heights.max} step={heights.step} value={heights.default} inputmode="numeric" aria-describedby={`${id}-note`} /><span aria-hidden="true">in</span></div>
+    <button type="button" data-hstep="1" aria-label="1 inch taller">+</button>
+  </div>
+  <span class="hint" id={`${id}-note`} aria-live="polite">An {heights.default} in topper on a 6 ft fence makes it 7 ft 6 in.</span>
+</div>

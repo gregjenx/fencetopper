@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import { assetVersion, colors, extenderOptions } from '../data/site';
+const ext = extenderOptions.map(({ id, name }) => ({ id, name }));
+const colorNames = Object.fromEntries(colors.map((c) => [c.id, c.name]));
+---
+<Base title="Staff project" path="/staff-project" noindex variant="staff" description="FenceTopper staff project review.">
+  <section class="wrap staff-page" id="staff-project"><p class="muted">Loading…</p></section>
+  <Fragment slot="scripts">
+    <script is:inline define:vars={{ colorNames, ext }}>window.FT_COLOR_NAMES = colorNames; window.FT_EXTENDERS = ext;</script>
+    <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>
+    <script is:inline src={`/js/staff.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

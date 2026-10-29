@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+import { faqs } from '../data/site';
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+};
+---
+<Base title="Fence Topper FAQ" path="/faq" breadcrumb="FAQ" schema={[faqLd]}
+  description="Answers about FenceTopper: heights, measuring, DIY installation, corners, wind, colors, HOA rules, shipping and seasonal removal.">
+  <section class="page-head wrap">
+    <span class="eyebrow">FAQ</span>
+    <h1>Questions about fence toppers</h1>
+    <p class="lead">Can’t find your answer? <button class="link" type="button" data-chat-open style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline">Ask the assistant</button> or <a class="link" href="/contact">contact our team</a>.</p>
+  </section>
+  <section class="section-tight">
+    <div class="wrap faq">
+      {faqs.map((f, i) => <details open={i < 3}><summary>{f.q}</summary><p>{f.a}</p></details>)}
+    </div>
+  </section>
+</Base>

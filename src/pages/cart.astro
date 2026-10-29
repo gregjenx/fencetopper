@@ -1,0 +1,51 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Cart" path="/cart" noindex description="Review your FenceTopper order.">
+  <section class="page-head wrap">
+    <h1>Your cart</h1>
+  </section>
+  <section class="section-tight">
+    <div class="wrap shop-grid">
+      <div class="panel" id="cart-items" aria-live="polite"></div>
+      <aside class="panel summary">
+        <dl id="cart-sum"></dl>
+        <button class="btn btn-primary btn-block" type="button" id="checkout">Checkout</button>
+        <p class="note alert" id="checkout-note" hidden>Checkout isn’t connected yet. This button will open a secure payment page (for example Shopify or Stripe) once one is set up. <span class="placeholder">Placeholder</span></p>
+        <a class="link" href="/shop">Keep shopping</a>
+      </aside>
+    </div>
+  </section>
+  <script is:inline slot="scripts">
+    document.addEventListener('DOMContentLoaded', function () {
+      var FT = window.FT; if (!FT) return; FT.fmtLen = FT.fmtLen || function (t) { t = Math.round(t); var f = Math.floor(t / 12), i = t % 12; return f ? f + ' ft' + (i ? ' ' + i + ' in' : '') : i + ' in'; };
+      var list = document.getElementById('cart-items'), sum = document.getElementById('cart-sum');
+      var names = { carbon: 'Carbon', black: 'Black', evergreen: 'Evergreen', brown: 'Brown' };
+      function paint() {
+        var items = FT.cart(), total = 0;
+        if (!items.length) {
+          list.innerHTML = '<p>Your cart is empty.</p><a class="btn btn-primary" href="' + FT.link('/shop') + '">Get your price</a>';
+        } else {
+          list.innerHTML = items.map(function (it, i) {
+            total += it.total;
+            var runs = it.runInches ? it.runInches.map(FT.fmtLen).join(', ') : (it.runs || []).join(', ') + ' ft';
+            var len = it.totalIn ? FT.fmtLen(it.totalIn) : it.feet + ' ft';
+            var n = it.runInches ? it.runInches.length : (it.runs || []).length;
+            return '<div style="display:grid;grid-template-columns:1fr auto;gap:6px 16px;padding-bottom:16px;border-bottom:1px solid var(--line)">' +
+              '<strong>FenceTopper · ' + it.height + ' in · ' + (names[it.color] || it.color) + '</strong><strong style="font-variant-numeric:tabular-nums">' + FT.money(it.total) + '</strong>' +
+              '<span class="muted" style="font-size:.95rem">' + len + ' in ' + n + ' run' + (n === 1 ? '' : 's') + ' (' + runs + ') · ' + it.panels + ' panel' + (it.panels === 1 ? '' : 's') + (it.posts != null ? ' · ' + it.posts + ' posts' : '') + (it.corners ? ' · ' + it.corners + ' corner' + (it.corners === 1 ? '' : 's') : '') + (it.covers != null ? ' · ' + it.covers + ' covers' : '') + '</span>' +
+              '<button type="button" class="add-run" data-remove="' + i + '">Remove</button></div>';
+          }).join('');
+        }
+        var ship = total >= FT.PRICING.freeShippingOver || !total ? 0 : null;
+        sum.innerHTML = '<dt>Subtotal</dt><dd>' + FT.money(total) + '</dd><dt>Shipping</dt><dd>' + (ship === 0 ? (total ? 'Free' : '—') : 'At checkout') + '</dd>' +
+          '<dt class="total">Total</dt><dd class="total">' + FT.money(total) + '</dd>';
+        list.querySelectorAll('[data-remove]').forEach(function (b) {
+          b.addEventListener('click', function () { var it = FT.cart(); it.splice(Number(b.dataset.remove), 1); FT.setCart(it); paint(); });
+        });
+      }
+      document.getElementById('checkout').addEventListener('click', function () { document.getElementById('checkout-note').hidden = false; });
+      paint();
+    });
+  </script>
+</Base>

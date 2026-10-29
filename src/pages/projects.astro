@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import { assetVersion } from '../data/site';
+---
+<Base title="My projects" path="/projects" noindex description="Your saved FenceTopper projects.">
+  <section class="page-head wrap projects-head">
+    <div>
+      <span class="eyebrow">Account</span>
+      <h1>My projects</h1>
+      <p class="muted" data-signed-in-as></p>
+    </div>
+    <div class="projects-actions">
+      <a class="btn btn-primary" href="/shop">Start a new project</a>
+      <button class="btn btn-outline" type="button" data-sign-out hidden>Sign out</button>
+    </div>
+  </section>
+  <section class="section-tight">
+    <div class="wrap">
+      <ul class="project-list" id="project-list" aria-live="polite"></ul>
+    </div>
+  </section>
+  <Fragment slot="scripts">
+    <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>
+    <script is:inline src={`/js/account.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

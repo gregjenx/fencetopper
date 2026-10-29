@@ -1,0 +1,159 @@
+---
+import Base from '../layouts/Base.astro';
+import { brand, colors, pricing, assetVersion, features } from '../data/site';
+import HeightStepper from '../components/HeightStepper.astro';
+
+const offer = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'FenceTopper privacy fence extension',
+  brand: { '@type': 'Brand', name: brand.name },
+  description: brand.description,
+  image: brand.url + '/img/hero-evergreen.webp',
+  offers: {
+    '@type': 'Offer',
+    price: pricing.perSqFt,
+    priceCurrency: 'USD',
+    priceSpecification: { '@type': 'UnitPriceSpecification', price: pricing.perSqFt, priceCurrency: 'USD', unitCode: 'FTK', unitText: 'per square foot' },
+    availability: 'https://schema.org/PreOrder',
+    url: brand.url + '/shop',
+  },
+};
+---
+<Base title="Build Your Fence Topper and Get a Price" path="/shop" breadcrumb="Shop" schema={[offer]}
+  description="Enter your fence measurements, choose a topper height from 12 to 24 inches and a color, and get an instant FenceTopper estimate.">
+  <section class="page-head wrap">
+    <span class="eyebrow">Shop</span>
+    <h1>Get your price.</h1>
+    <p class="lead">Enter each straight run of fence, choose height and color, and see your estimate. <a class="link" href="/measure">How to measure</a></p>
+  </section>
+
+  <section class="section-tight">
+    <form class="wrap shop-grid" id="shop-form" novalidate>
+      <div class="panel">
+        <div class="field">
+          <span class="label" id="lbl-runs">Fence runs</span>
+          <span class="hint" id="run-def">A run is one straight, level stretch of fence. It can include multiple posts. Start a new run at a gate, corner, or change in height.</span>
+          <div class="run-list" id="runs" aria-describedby="run-def"></div>
+          <p class="sr-only" id="move-status" aria-live="polite"></p>
+          <button class="add-run" type="button" id="add-run">+ Add another run</button>
+        </div>
+        <HeightStepper id="height" />
+        <div class="field">
+          <span class="label" id="lbl-color">Color</span>
+          <div class="choice-row four" role="radiogroup" aria-labelledby="lbl-color">
+            {colors.map((c, i) => (
+              <label class="choice"><input type="radio" name="color" value={c.id} data-note={c.note} data-hex={c.hex} checked={i === 0} /><span style="gap:6px"><i style={`display:block;width:100%;height:22px;border-radius:4px;background:${c.hex}`}></i>{c.name}</span></label>
+            ))}
+          </div>
+          <span class="hint" id="color-note">{colors[0].note}</span>
+        </div>
+        <p class="hint" style="font-size:.9rem;color:var(--muted)">Not sure? <a class="link" href="/visualizer">Preview heights and colors on your fence</a>.</p>
+        <div class="confirms">
+          <div class="field confirm">
+            <label class="check" for="confirm-straight"><input id="confirm-straight" type="checkbox" aria-describedby="confirm-straight-error" /> <span>I confirm that each run is, or will be, straight and level from end to end. Changes in direction or fence height have been entered as separate runs. Continuously sloped runs are not supported.</span></label>
+            <button class="why-link" type="button" id="why-toggle" aria-expanded="false" aria-controls="why-text">Why?</button>
+            <p class="note" id="why-text" hidden>If your fence turns a corner or steps up or down, enter each part as a separate run. Fence sections that continuously follow a slope are not currently supported.</p>
+            <p class="field-error" id="confirm-straight-error" role="alert" hidden>Please confirm that each run is straight and level to continue.</p>
+          </div>
+          <div class="field confirm">
+            <label class="check" for="confirm-extenders"><input id="confirm-extenders" type="checkbox" aria-describedby="confirm-extenders-error" /> <span>I understand that I or my contractor will provide and install all required fence post extensions and mounting hardware.</span></label>
+            <p class="field-error" id="confirm-extenders-error" role="alert" hidden>Please confirm who provides the fence post extensions to continue.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel summary" aria-labelledby="sum-title">
+        <h2 id="sum-title" style="font-size:1.4rem">Your FenceTopper</h2>
+        <div class="preview-strip"><canvas id="strip" width="800" height="120" aria-hidden="true" style="width:100%;height:auto;display:block"></canvas></div>
+        <dl id="summary" aria-live="polite"></dl>
+        <p class="hint" style="font-size:.9rem;color:var(--muted)">This is an estimate. Your final price comes with your design, after we review your measurements.</p>
+        <button class="btn btn-primary btn-block" type="submit">Build my Topper</button>
+        <button class="btn btn-outline btn-block" type="button" data-chat-open data-chat-prompt="Help me measure">Help me measure</button>
+      </aside>
+    </form>
+  </section>
+
+  <dialog class="sheet" id="save-sheet" aria-labelledby="save-title">
+    <div class="sheet-body" data-step="details">
+      <h2 id="save-title">{features.builder ? 'Save your project' : 'Send us your project'}</h2>
+      {!features.builder && <p>We’ll review your runs and email you about measuring, extensions and your final price. No payment now.</p>}
+      <p class="muted" data-build-summary></p>
+      <form id="details-form" class="sheet-form" novalidate>
+        <div class="name-row">
+          <div class="field"><label for="s-first">First name</label><input id="s-first" type="text" autocomplete="given-name" required /></div>
+          <div class="field"><label for="s-last">Last name</label><input id="s-last" type="text" autocomplete="family-name" required /></div>
+        </div>
+        <div class="field"><label for="s-email">Email</label><input id="s-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required /></div>
+        <div class="field"><label for="s-mobile">Mobile <span class="muted">(optional)</span></label><input id="s-mobile" type="tel" autocomplete="tel" inputmode="tel" /></div>
+        {features.builder && (<div class="field">
+          <span class="label" id="lbl-via">Send my code by</span>
+          <div class="choice-row two" role="radiogroup" aria-labelledby="lbl-via">
+            <label class="choice"><input type="radio" name="via" value="email" checked /><span>Email</span></label>
+            <label class="choice"><input type="radio" name="via" value="text" /><span>Text</span></label>
+          </div>
+        </div>)}
+        {!features.builder && <div class="field"><label for="s-notes">Anything we should know? <span class="muted">(optional)</span></label><textarea id="s-notes" placeholder="Your extensions, post sizes, a slope, a gate"></textarea></div>}
+        <label class="check" for="s-consent"><input id="s-consent" type="checkbox" /> <span>{features.builder ? 'Send me reminders about my project.' : 'Email me tips and updates about FenceTopper.'}</span></label>
+        <p class="field-error" id="details-error" role="alert" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit">{features.builder ? 'Send my code' : 'Send my project'}</button>
+        <button class="btn btn-outline btn-block" type="button" data-close-sheet>Keep editing</button>
+      </form>
+    </div>
+    {features.builder && (<Fragment>
+    <div class="sheet-body" data-step="code" hidden>
+      <h2>Enter your code</h2>
+      <p>We sent a 6-digit code to <strong data-dest></strong>.</p>
+      <form id="code-form" class="sheet-form" novalidate>
+        <fieldset class="code-boxes">
+          <legend class="sr-only">6-digit code</legend>
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label={`Digit ${n}`} autocomplete={n === 1 ? 'one-time-code' : 'off'} />
+          ))}
+        </fieldset>
+        <p class="field-error" id="code-error" role="alert" hidden>Enter all 6 digits of your code.</p>
+        <p class="note">Code sending isn’t connected yet, so nothing was sent. For this preview, enter any 6 digits. <span class="placeholder">Placeholder</span></p>
+        <button class="btn btn-primary btn-block" type="submit">Save my project</button>
+        <div class="code-links">
+          <button class="why-link" type="button" data-resend disabled>Resend code in 30s</button>
+          <button class="why-link" type="button" data-change>Change email</button>
+        </div>
+      </form>
+    </div>
+    </Fragment>)}
+    {!features.builder && (
+    <div class="sheet-body" data-step="sent" hidden>
+      <h2>Thanks, <span data-first></span>. We have your project.</h2>
+      <p class="muted" data-build-summary></p>
+      <p>We’ll email <strong data-dest></strong> to go over your measurements, your post extensions and your final price. You don’t pay anything until you approve the design.</p>
+      <p class="note alert" data-not-sent hidden>The request form isn’t connected to an inbox yet, so this wasn’t sent. <span class="placeholder">Placeholder</span></p>
+      <button class="btn btn-primary btn-block" type="button" data-close-sheet>Done</button>
+    </div>
+    )}
+    {features.builder && (
+    <div class="sheet-body" data-step="saved" hidden>
+      <h2>Your project is saved</h2>
+      <p>Thanks, <span data-first></span>. Your runs, confirmations, height and color are saved to your project.</p>
+      <p class="muted" data-build-summary></p>
+      <p class="note">Next, your project walks you through posts, spans, extenders and photos for each run.</p>
+      <a class="btn btn-primary btn-block" href="/project" data-open-project>Open my project</a>
+      <button class="btn btn-outline btn-block" type="button" data-close-sheet>Later</button>
+    </div>
+    )}
+  </dialog>
+
+  <section class="section">
+    <div class="wrap prose">
+      <h2>What’s in the box</h2>
+      <ul>
+        <li>Mesh panels sized to your runs, with sewn-in battens and continuous top and bottom straps</li>
+        <li>Removable covers and pull-through fasteners for each end post <span class="placeholder">Confirm contents</span></li>
+      </ul>
+      <p>Posts aren’t included. You or your contractor provide them. <a class="link" href="/fence-extenders">See extender options</a>.</p>
+    </div>
+  </section>
+  <Fragment slot="scripts">
+    {features.builder && <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>}
+    <script is:inline src={`/js/shop.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

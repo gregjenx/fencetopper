@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import { pricing } from '../data/site';
+---
+<Base title="Shipping and Returns" path="/shipping" breadcrumb="Shipping & returns"
+  description="FenceTopper shipping and return information.">
+  <section class="page-head wrap"><span class="eyebrow">Shipping & returns</span><h1>Shipping and returns</h1></section>
+  <section class="section-tight">
+    <div class="wrap prose">
+      <p class="note alert"><span class="placeholder">Placeholder</span> These policies are drafts. Replace them with your real carrier, timing and return terms before launch.</p>
+      <h2>Shipping</h2>
+      <p>Your FenceTopper panel ships to your door with its straps, end covers and fasteners. Fence extenders aren’t included. Orders over ${pricing.freeShippingOver} ship free within the contiguous United States. You’ll get a tracking link by email when your order ships.</p>
+      <h2>Returns</h2>
+      <p>If your FenceTopper doesn’t fit, contact us within 30 days of delivery and we’ll help you exchange or return it. Panels made to your measurements may not be returnable once installed.</p>
+      <h2>Damaged in transit</h2>
+      <p>Send a photo of the box and the damage to our support team within 7 days and we’ll replace the damaged part.</p>
+    </div>
+  </section>
+</Base>

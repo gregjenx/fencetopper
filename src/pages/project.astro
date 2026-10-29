@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import { assetVersion, extenderOptions, colors, heightList } from '../data/site';
+const ext = extenderOptions.map(({ id, name, fits, rise, group }) => ({ id, name, fits, rise, group }));
+const colorNames = Object.fromEntries(colors.map((c) => [c.id, c.name]));
+---
+<Base title="My project" path="/project" noindex description="Tell us about your fence, walk each run left to right, and submit your FenceTopper project for review.">
+  <div class="wrap builder" id="builder">
+    <p class="builder-loading">Loading your project…</p>
+  </div>
+  <Fragment slot="scripts">
+    <script is:inline define:vars={{ ext, colorNames, heightList }}>window.FT_EXTENDERS = ext; window.FT_COLOR_NAMES = colorNames; window.FT_HEIGHTS = heightList;</script>
+    <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>
+    <script is:inline src={`/js/builder.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

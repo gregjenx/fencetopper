@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import { brand, colors, heights, specs } from '../data/site';
+const product = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'FenceTopper privacy fence extension',
+  brand: { '@type': 'Brand', name: brand.name },
+  description: brand.description,
+  image: [brand.url + '/img/construction.webp'],
+  material: 'Acrylic-coated woven outdoor mesh, fiberglass battens, webbing straps',
+  color: colors.map((c) => c.name).join(', '),
+  additionalProperty: specs.map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
+};
+---
+<Base title="How FenceTopper Is Built" path="/product" breadcrumb="How it’s built" schema={[product]}
+  description="FenceTopper construction: woven outdoor mesh tensioned between customer-supplied posts, fiberglass battens, continuous webbing straps, inner post pockets and removable end covers.">
+  <section class="page-head wrap">
+    <span class="eyebrow">How it’s built</span>
+    <h1>Commercial shade construction, made for your fence.</h1>
+    <p class="lead">A smooth woven outdoor mesh panel is tensioned between the posts you install above your fence. Every part is there to keep it straight, tight and level.</p>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap">
+      <img class="rounded" src="/img/construction.webp" srcset="/img/construction-800.webp 800w, /img/construction.webp 1536w" sizes="(min-width: 1160px) 1128px, 100vw" width="1536" height="596" alt="FenceTopper construction composite: full assembly, outer post with strap fasteners, inner post pocket" />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+        <div class="panel"><h3>Continuous straps</h3><p class="muted">One length of 1 in webbing runs through the whole top hem and one through the bottom. At each end the same webbing becomes the strap that wraps the post, so there’s no seam to pull loose.</p></div>
+        <div class="panel"><h3>Fiberglass battens</h3><p class="muted">3/8 in round fiberglass rods are sewn into vertical channels beside every post. They keep the panel edges straight under tension.</p></div>
+        <div class="panel"><h3>Inner post pockets</h3><p class="muted">The panel passes in front of and behind each inner post, so it looks the same from both sides. The pocket has about 1.5 in of room to line up with your posts.</p></div>
+        <div class="panel"><h3>Removable end covers</h3><p class="muted">A fabric cover wraps each end post and attaches flat with a 2 in hook-and-loop strip for a finished look. Take it off to adjust the straps.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap split" style="align-items:start">
+      <div style="display:grid;gap:14px">
+        <h2>Specifications</h2>
+        <div class="table-wrap"><table><tbody>
+          {specs.map(([k, v]) => <tr><th scope="row">{k}</th><td>{v}</td></tr>)}
+        </tbody></table></div>
+        <p class="muted" style="font-size:.9rem">Wind, UV and hardware ratings will be added after product testing. <span class="placeholder">Placeholder</span></p>
+      </div>
+      <div style="display:grid;gap:14px">
+        <h2>Colors</h2>
+        <div style="display:grid;gap:10px">
+          {colors.map((c) => (
+            <div class="panel" style="grid-template-columns:56px 1fr;gap:14px;align-items:center;padding:14px">
+              <span class="swatch-chip" style={`background-color:${c.hex};height:56px`}></span>
+              <div><strong>{c.name}</strong><p class="muted" style="font-size:.95rem">{c.note}</p></div>
+            </div>
+          ))}
+        </div>
+        <h2 style="margin-top:12px">Heights</h2>
+        <p>Choose any height from {heights.min} to {heights.max} in, in {heights.step} in steps. {heights.default} in is the most popular and turns a 6 ft fence into 7 ft 6 in. Go lower for a low sightline, or higher to screen a deck or a second-floor window.</p>
+        <a class="btn btn-primary" href="/shop" style="margin-top:8px">Get my price</a>
+      </div>
+    </div>
+  </section>
+</Base>

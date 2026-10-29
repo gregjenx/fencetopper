@@ -1,0 +1,39 @@
+---
+import Base from '../layouts/Base.astro';
+import { assetVersion } from '../data/site';
+---
+<Base title="Sign in" path="/account" noindex description="Sign in to your FenceTopper projects with a one-time code.">
+  <section class="section-tight">
+    <div class="wrap account-wrap">
+      <div class="panel account-panel" data-step="contact">
+        <span class="eyebrow">My projects</span>
+        <h1 class="account-title">Sign in</h1>
+        <p class="muted">We’ll send you a 6-digit code. No password needed.</p>
+        <form id="signin-form" class="sheet-form" novalidate>
+          <div class="field"><label for="a-contact">Email or mobile number</label><input id="a-contact" type="text" autocomplete="username" inputmode="email" aria-describedby="a-error" /></div>
+          <p class="field-error" id="a-error" role="alert" hidden></p>
+          <button class="btn btn-primary btn-block" type="submit">Send my code</button>
+        </form>
+        <p class="muted account-new">New here? <a class="link" href="/shop">Start with your fence measurements</a>.</p>
+      </div>
+      <div class="panel account-panel" data-step="code" hidden>
+        <h1 class="account-title">Enter your code</h1>
+        <p>We sent a 6-digit code to <strong data-dest></strong>.</p>
+        <form id="code-form" class="sheet-form" novalidate>
+          <fieldset class="code-boxes">
+            <legend class="sr-only">6-digit code</legend>
+            {[1, 2, 3, 4, 5, 6].map((n) => <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label={`Digit ${n}`} autocomplete={n === 1 ? 'one-time-code' : 'off'} />)}
+          </fieldset>
+          <p class="field-error" id="code-error" role="alert" hidden>Enter all 6 digits of your code.</p>
+          <p class="note">Code sending isn’t connected yet, so nothing was sent. For this preview, enter any 6 digits. <span class="placeholder">Placeholder</span></p>
+          <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+          <button class="why-link" type="button" data-change>Use a different email or number</button>
+        </form>
+      </div>
+    </div>
+  </section>
+  <Fragment slot="scripts">
+    <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>
+    <script is:inline src={`/js/account.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { brand } from '../data/site';
+
+const steps = [
+  { name: 'Install your fence extenders', text: 'You or your contractor attach the extender you chose to each existing fence post at the post locations in your approved design. Set each one plumb and level, all at the same height.', link: ['/fence-extenders', 'See extender options'] },
+  { name: 'Lay out the panel', text: 'Unroll the panel along the fence with its pockets lined up with your inner posts. The battens are already sewn into the panel.' },
+  { name: 'Slide the panel onto the inner posts', text: 'Lift the panel and slide each inner post into its pocket. The pocket wraps the post front and back and has about 1.5 in of side-to-side room, so center the post in the pocket.' },
+  { name: 'Wrap the end straps', text: 'At each end, the top and bottom webbing continues past the panel as a strap. Wrap each strap around the outer post and feed it through its pull-through fastener with the buckle facing out.' },
+  { name: 'Tension the panel', text: 'Pull the straps evenly at both ends until the fabric is smooth and taut. The straps give you about 4 to 6 in of adjustment in total.' },
+  { name: 'Level and lock the height', text: 'Check that the panel sits at the same height on every post. Drive one self-tapping screw at each center post to hold the panel at that height.' },
+  { name: 'Attach the end covers', text: 'Wrap a removable cover around each outer post and press it flat onto the 2 in hook-and-loop strip at the panel edge. The panel and batten stay exactly where they are.' },
+];
+const howTo = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to install a FenceTopper privacy fence extension',
+  description: 'Install your fence extenders, slide the panel over the inner posts, wrap and tension the end straps, lock the height and attach the covers.',
+  tool: ['Drill or driver', 'Tape measure', 'Level', 'Pencil'].map((name) => ({ '@type': 'HowToTool', name })),
+  supply: ['FenceTopper panel', 'Fence extenders (customer supplied)', 'Self-tapping screws', 'End covers'].map((name) => ({ '@type': 'HowToSupply', name })),
+  step: steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.name, text: s.text, url: brand.url + '/install#step-' + (i + 1) })),
+};
+---
+<Base title="How to Install a Fence Topper" path="/install" breadcrumb="Installation guide" schema={[howTo]}
+  description="Install a FenceTopper yourself in seven steps: install your fence extenders, slide on the panel, wrap and tension the straps, lock the height and attach the covers.">
+  <section class="page-head wrap">
+    <span class="eyebrow">Installation guide</span>
+    <h1>Install it yourself.</h1>
+    <p class="lead">Once your fence extenders are in, the panel installs with a drill, a level and a tape measure. Two people make it easier on long runs.</p>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap split" style="align-items:start">
+      <ol class="steps">
+        {steps.map((s, i) => (
+          <li class="step" id={`step-${i + 1}`}><span class="step-num">{String(i + 1).padStart(2, '0')}</span><div><h3>{s.name}</h3><p>{s.text}</p>{s.link && <p><a class="link" href={s.link[0]}>{s.link[1]}</a></p>}</div></li>
+        ))}
+      </ol>
+      <div style="display:grid;gap:16px">
+        <img class="rounded" src="/img/construction-800.webp" width="800" height="310" alt="Outer post with top and bottom straps through pull-through fasteners, and an inner post inside its pocket" loading="lazy" />
+        <div class="note">
+          <strong>Tools you need</strong>
+          <ul style="margin:8px 0 0;padding-left:1.2em;display:grid;gap:6px">
+            <li>Drill or driver</li><li>Tape measure</li><li>Level</li><li>Pencil</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2 style="font-size:1.25rem">Corners</h2>
+          <p class="muted">Two straight panels meet at one shared corner post. Install each panel as its own run, with its own straps and cover. Never bend one panel around a corner.</p>
+        </div>
+        <div class="panel">
+          <h2 style="font-size:1.25rem">Care</h2>
+          <p class="muted">Re-tension the straps each season. To store for winter, loosen the straps and lift the panel off; the posts can stay up.</p>
+        </div>
+        <p class="note">Installation video coming soon. <span class="placeholder">Placeholder</span></p>
+        <button class="btn btn-primary btn-block" type="button" data-chat-open data-chat-prompt="Installation help">Ask an installation question</button>
+      </div>
+    </div>
+  </section>
+</Base>
