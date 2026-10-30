@@ -167,7 +167,7 @@
   } else if (draft && draft.runs && draft.runs.length) {
     draft.runs.forEach(function (r, i) { addRun(Math.round(Number(r) * 48)); });
   } else {
-    addRun(48 * 48);
+    addRun(24 * 48); // 24 ft
   }
   if (draft) {
     if (draft.height) heightCtl.set(FT.clampHeight(draft.height));
