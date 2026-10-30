@@ -400,7 +400,14 @@
   function totalsLine(r) {
     var s = runSummary(r), sum = r.spans.reduce(function (a, b) { return a + (b > 0 ? b : 0); }, 0);
     if (!s.measured) return '<span class="muted">Your estimate used about ' + fmtQin(r.qin) + '.</span>';
-    if (s.len) return '<strong>' + fmtQin(s.len) + '</strong> center to center between the end posts' + (s.len !== r.qin ? ' <span class="muted">(estimate used ' + fmtQin(r.qin) + '; we’ll use your measurements)</span>' : '');
+    if (s.len) {
+      // Overall = center to center plus half of each end post, so it matches a tape run outside edge to outside edge.
+      var w = [0, r.posts.length - 1].map(function (k) { var sp = P.postSpec(p, r, k); return sp && sp.size ? Number(sp.size) * 4 : null; });
+      var overall = w[0] != null && w[1] != null ? Math.round(s.len + (w[0] + w[1]) / 2) : null;
+      return '<strong>' + fmtQin(s.len) + '</strong> center to center between the end posts' +
+        (overall ? '<br><strong>' + fmtQin(overall) + '</strong> overall, outside edge to outside edge <span class="muted">(a quick tape check)</span>' : '') +
+        (s.len !== r.qin ? '<br><span class="muted">Your estimate used ' + fmtQin(r.qin) + '. We’ll use your measurements.</span>' : '');
+    }
     return 'Measured so far: <strong>' + fmtQin(sum) + '</strong> <span class="muted">· ' + (s.total - s.measured) + ' to go · estimate used ' + fmtQin(r.qin) + '</span>';
   }
 

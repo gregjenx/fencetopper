@@ -18,12 +18,19 @@ import HeightStepper from '../components/HeightStepper.astro';
         <div class="viz-stage" id="viz-stage">
           <canvas id="viz-canvas" width="1600" height="1000" role="img" aria-label="Your fence with a FenceTopper drawn above it"></canvas>
         </div>
-        <p class="viz-help" id="viz-readout" aria-live="polite"></p>
+        <p class="viz-help viz-readout" id="viz-readout" aria-live="polite"></p>
         <div class="viz-actions">
           <label class="btn btn-primary" for="viz-file" style="cursor:pointer"><Icon name="upload" width="20" height="20" />Upload your photo</label>
           <input id="viz-file" type="file" accept="image/*" class="sr-only" />
           <button class="btn btn-outline" type="button" id="viz-compare" aria-pressed="false">Show before</button>
-          <button class="btn btn-outline" type="button" id="viz-sample">Use sample yard</button>
+        </div>
+        <div class="viz-samples" role="group" aria-labelledby="viz-samples-label">
+          <span class="label" id="viz-samples-label">No photo handy? Try a sample yard</span>
+          <div class="viz-sample-row">
+            <button type="button" class="viz-sample" data-sample="drawn" aria-pressed="true"><img alt="" width="240" height="150" /><span>Illustration</span></button>
+            <button type="button" class="viz-sample" data-sample="pool" aria-pressed="false"><img src="/img/samples/pool-thumb.webp" alt="" width="240" height="180" loading="lazy" /><span>Poolside</span></button>
+            <button type="button" class="viz-sample" data-sample="patio" aria-pressed="false"><img src="/img/samples/patio-thumb.webp" alt="" width="240" height="180" loading="lazy" /><span>Backyard patio</span></button>
+          </div>
         </div>
         <p class="viz-help">Your photo stays on your device. Nothing is uploaded to our servers.</p>
       </div>

@@ -59,7 +59,17 @@
     return c;
   }
 
+  // Sample photos, with the top and bottom of each fence marked in the photo's own pixels (1448 x 1086).
+  var SAMPLES = {
+    pool: { src: '/img/samples/pool.webp', fence: { x0: 30, x1: 1448, top: 256, bot: 632 } },
+    patio: { src: '/img/samples/patio.webp', fence: { x0: 0, x1: 1400, top: 303, bot: 646 } },
+  };
+
   function defaultHandles() {
+    if (photo && photo.fence) {
+      var f = photo.fence, k = W / photo.width;
+      return { tl: { x: f.x0 * k, y: f.top * k }, tr: { x: f.x1 * k, y: f.top * k }, bl: { y: f.bot * k }, br: { y: f.bot * k } };
+    }
     if (!photo || photo.isSample) return { tl: { x: 0, y: 520 }, tr: { x: W, y: 520 }, bl: { y: 940 }, br: { y: 940 } };
     return { tl: { x: W * .04, y: H * .5 }, tr: { x: W * .96, y: H * .5 }, bl: { y: H * .82 }, br: { y: H * .82 } };
   }
@@ -231,7 +241,20 @@
     draw();
   });
   document.getElementById('viz-reset').addEventListener('click', function () { state.h = defaultHandles(); draw(); });
-  document.getElementById('viz-sample').addEventListener('click', function () { setPhoto(sampleYard(), true); });
+  // Sample yards: the drawn illustration or a photo. The chosen one is marked pressed.
+  var sampleBtns = Array.prototype.slice.call(document.querySelectorAll('[data-sample]'));
+  function pressSample(id) { sampleBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.sample === id)); }); }
+  function useSample(id) {
+    var s = SAMPLES[id];
+    if (!s) { setPhoto(sampleYard(), true); pressSample('drawn'); return; }
+    var img = new Image();
+    img.onload = function () { img.fence = s.fence; setPhoto(img, true); pressSample(id); };
+    img.onerror = function () { if (FT.toast) FT.toast('That sample didn’t load. Try again.'); };
+    img.src = FT.link ? FT.link(s.src) : s.src;
+  }
+  sampleBtns.forEach(function (b) { b.addEventListener('click', function () { useSample(b.dataset.sample); }); });
+  var drawnThumb = document.querySelector('[data-sample="drawn"] img');
+  if (drawnThumb) { var tc = document.createElement('canvas'); tc.width = 240; tc.height = 150; tc.getContext('2d').drawImage(sampleYard(), 0, 0, 240, 150); drawnThumb.src = tc.toDataURL('image/png'); }
 
   var file = document.getElementById('viz-file');
   file.addEventListener('change', function () {
@@ -239,7 +262,7 @@
     if (!f) return;
     var url = URL.createObjectURL(f);
     var img = new Image();
-    img.onload = function () { setPhoto(img, false); URL.revokeObjectURL(url); document.getElementById('viz-stage').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    img.onload = function () { setPhoto(img, false); pressSample(null); URL.revokeObjectURL(url); document.getElementById('viz-stage').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
     img.onerror = function () { if (FT.toast) FT.toast('That file isn’t an image we can open. Try a JPG or PNG.'); };
     img.src = url;
   });
@@ -250,5 +273,5 @@
   });
 
   window.addEventListener('resize', draw);
-  setPhoto(sampleYard(), true);
+  setPhoto(sampleYard(), true); pressSample('drawn');
 })();
