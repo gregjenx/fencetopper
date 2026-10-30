@@ -1,16 +1,13 @@
 /* Guided Builder (docs/05, reworked 2026-10-23 from Greg's brief).
    Three stages: 1 Your fence (project-wide answers and defaults), 2 Runs (walk each run left to right,
    posts and measurements, exceptions only), 3 Review and submit. Payment comes after approval.
-   Live: the customer opens it signed in from their emailed link, and the project loads from and saves to
-   functions/api/project; submit and messages go to functions/api/submit and messages.
-   With features.preview on, it runs on this browser's data instead (see projects.js). */
+   PREVIEW ONLY: the project is read from and saved to this browser (see projects.js). */
 (function () {
   'use strict';
   var FT = window.FT, P = FT && FT.projects;
   var root = document.getElementById('builder');
   if (!root || !P) return;
-  var LIVE = !(window.FT_FEATURES || {}).preview;
-  if (!LIVE) P.seedDemo();
+  P.seedDemo();
   document.body.classList.add('is-builder');
   var EXT = window.FT_EXTENDERS || [];
   var COLOR_NAMES = window.FT_COLOR_NAMES || {};
@@ -20,48 +17,25 @@
 
   // ---------- Load ----------
   function hashParam(k) { return decodeURIComponent((location.hash.match(new RegExp('[#&]' + k + '=([^&]+)')) || [])[1] || ''); }
-  function notFound(title, text) {
-    var signIn = LIVE ? FT.link('/my-project') : FT.link('/account');
-    root.innerHTML = '<section class="section-tight"><div class="panel empty-state"><h1>' + esc(title || 'We couldn’t find that project') + '</h1>' +
-      '<p class="muted">' + esc(text || 'Sign in to see your projects, or start a new one from your fence measurements.') + '</p>' +
-      '<div class="ext-cta"><a class="btn btn-primary" href="' + signIn + '">Sign in</a><a class="btn btn-outline" href="' + FT.link('/shop') + '">Start a new project</a></div></div></section>';
+  var p = hashParam('p') ? P.get(hashParam('p')) : null;
+  if (!p) {
+    var mine = P.mine().sort(function (a, b) { return a.updatedAt < b.updatedAt ? 1 : -1; });
+    p = mine[0] || null;
   }
-  function loadLocal() {
-    var lp = hashParam('p') ? P.get(hashParam('p')) : null;
-    if (!lp) lp = P.mine().sort(function (a, b) { return a.updatedAt < b.updatedAt ? 1 : -1; })[0] || null;
-    if (lp) start(lp); else notFound();
+  if (!p) {
+    root.innerHTML = '<section class="section-tight"><div class="panel empty-state"><h1>We couldn’t find that project</h1>' +
+      '<p class="muted">Sign in to see your projects, or start a new one from your fence measurements.</p>' +
+      '<div class="ext-cta"><a class="btn btn-primary" href="' + FT.link('/account') + '">Sign in</a><a class="btn btn-outline" href="' + FT.link('/shop') + '">Start a new project</a></div></div></section>';
+    return;
   }
-  function loadLive() {
-    if (!FT.session.get()) { notFound('Sign in to open your project', 'Use the “Open my project” link in the email we sent when you saved it, or we’ll send you a new one.'); return; }
-    var id = hashParam('p');
-    FT.api('/api/project' + (id ? '?id=' + encodeURIComponent(id) : ''), { auth: true }).then(function (res) {
-      if (res.ok && res.data && res.data.project) { start(fromServer(res.data.project)); return; }
-      if (res.status === 401) { FT.session.clear(); notFound('Your sign-in expired', 'We’ll email you a new link to open your project.'); return; }
-      notFound();
-    }, function () { notFound('We couldn’t open your project', 'Check your connection and reload the page.'); });
-  }
-  // A saved Shop project has no Builder data yet; normalize() turns its runs into runs to walk.
-  function fromServer(row) {
-    var c = row.customer || {};
-    var b = row.builder || { runQin: row.runs, height: row.height, color: row.color, extender: row.extender, notes: row.notes, estimate: row.estimate_cents / 100, createdAt: row.created_at };
-    b.id = row.id; b.name = b.name || row.name; b.state = row.state;
-    b.first = c.first; b.last = c.last; b.email = c.email;
-    b.messages = (row.messages || []).map(function (m) { return { who: m.author === 'staff' ? 'FenceTopper' : 'You', text: m.body, at: m.created_at }; });
-    return P.normalize(b);
-  }
-
-  var p = null, S = null;
+  var S = p.setup;
   var EDITABLE = ['estimate', 'in-progress', 'needs-fix'];
   function editable() { return EDITABLE.indexOf(p.state) >= 0; }
 
-  var tab = 'build', stage = 'project', runIdx = 0;
-  function start(proj) {
-    p = proj; S = p.setup;
-    stage = hashParam('s') || (editable() ? 'project' : 'review');
-    if (stage === 'setup' || stage === 'runs') stage = 'project'; // older links
-    runIdx = Math.min(p.runs.length - 1, Math.max(0, Number(hashParam('r')) || 0));
-    render();
-  }
+  var tab = 'build';
+  var stage = hashParam('s') || (editable() ? 'project' : 'review');
+  if (stage === 'setup' || stage === 'runs') stage = 'project'; // older links
+  var runIdx = Math.min(p.runs.length - 1, Math.max(0, Number(hashParam('r')) || 0));
   var editingQ = null, armedDelete = null, addingRun = false, openPost = {};
   var saveTimer = null, savedAt = null, rendering = false;
 
@@ -353,8 +327,9 @@
   function spanBlock(r, i, k) {
     var m = P.method(p), unsure = !!r.unsure[k];
     var legend = (m === 'gap' ? 'Gap from ' : 'Center to center, ') + postName(r, k).toLowerCase() + ' to ' + postName(r, k + 1).toLowerCase();
-    return '<li class="seq-span' + (r.spans[k] > 0 ? ' set' : '') + '"><span class="seq-line" aria-hidden="true"></span><div class="seq-body">' +
-      '<span class="label">' + (m === 'gap' ? 'Gap' : 'Center to center') + ': ' + postName(r, k) + ' → ' + postName(r, k + 1) + '</span>' +
+    var needs = !(r.spans[k] > 0);
+    return '<li class="seq-span' + (r.spans[k] > 0 ? ' set' : '') + (needs ? (unsure ? ' unsure' : ' needs') : '') + '" id="run-' + i + '-spanrow-' + k + '"><span class="seq-line" aria-hidden="true"></span><div class="seq-body">' +
+      '<span class="label">' + (m === 'gap' ? 'Gap' : 'Center to center') + ': ' + postName(r, k) + ' → ' + postName(r, k + 1) + (needs ? ' <span class="needs-tag">' + (unsure ? 'Not sure yet' : 'Still needed') + '</span>' : '') + '</span>' +
       mi('run-' + i + '-span-' + k, r.spans[k] || 0, legend) +
       '<label class="check small" for="run-' + i + '-unsure-' + k + '"><input id="run-' + i + '-unsure-' + k + '" type="checkbox" data-unsure="' + k + '"' + (unsure ? ' checked' : '') + dis() + ' /> <span>Not sure yet</span></label>' +
       (editable() ? '<button type="button" class="add-post" data-add-post="' + (k + 1) + '"><span aria-hidden="true">+</span> Add a post here</button>' : '') +
@@ -379,6 +354,7 @@
       '<button type="button" class="help-step" data-chat-open data-chat-prompt="' + esc(r.name + ': I need help measuring') + '"><span aria-hidden="true">💬</span> Get help with this run</button>' +
       '</div></details>';
     return '<div class="run-top"><button type="button" class="why-link" data-stage="project" data-to-runs>← All runs</button><span class="muted">Run ' + (i + 1) + ' of ' + p.runs.length + '</span></div>' +
+      runSwitcher(i) + runChecklist(i) +
       '<section class="panel run-editor"><div class="field"><label for="run-' + i + '-name" class="sr-only">Run name</label><input id="run-' + i + '-name" class="run-name" data-bind="run.' + i + '.name" value="' + esc(r.name) + '"' + dis() + ' /></div>' +
       '<div class="drawing-wrap" data-drawing="' + i + '">' + runDrawing(r, i) + '</div>' +
       '<div class="run-totals" data-totals="' + i + '">' + totalsLine(r) + '</div>' +
@@ -388,6 +364,38 @@
       '<ol class="seq" id="run-' + i + '-seq">' + seq + '</ol></section>' + more +
       '<div class="stage-nav">' + (i > 0 ? '<button type="button" class="why-link" data-open-run="' + (i - 1) + '">← ' + esc(p.runs[i - 1].name) + '</button>' : '<button type="button" class="why-link" data-stage="project" data-to-runs>← All runs</button>') +
       (i < p.runs.length - 1 ? '<button type="button" class="btn btn-primary" data-open-run="' + (i + 1) + '">Next: ' + esc(p.runs[i + 1].name) + '</button>' : '<button type="button" class="btn btn-primary" data-stage="review">Review project</button>') + '</div>';
+  }
+  // Every run is one tap away, with what each still needs. Nothing here blocks moving on.
+  function runOpen(r) {
+    var n = r.spans.filter(function (x) { return !(x > 0); }).length;
+    return n + r.posts.filter(function (x) { return x.spec && !(x.spec.shape && x.spec.size); }).length;
+  }
+  function runSwitcher(i) {
+    if (p.runs.length < 2) return '';
+    return '<nav class="run-switch" aria-label="Your runs"><ol>' + p.runs.map(function (r, k) {
+      var n = runOpen(r);
+      return '<li><button type="button" data-open-run="' + k + '"' + (k === i ? ' aria-current="page"' : '') + '><span class="rs-name">' + esc(r.name) + '</span>' +
+        (n ? '<span class="rs-count" aria-label="' + n + ' still needed">' + n + '</span>' : '<span class="rs-done" aria-label="nothing needed">✓</span>') + '</button></li>';
+    }).join('') + '</ol></nav>';
+  }
+  // "Checklist: Items still needed" for this run, each item a link to the field, plus a pointer to project questions.
+  function runChecklist(i) {
+    var r = p.runs[i], items = [];
+    r.spans.forEach(function (x, k) {
+      if (x > 0) return;
+      var what = postName(r, k) + ' → ' + postName(r, k + 1);
+      items.push({ label: r.unsure[k] ? 'Confirm ' + what + ' (marked not sure)' : 'Measure ' + what, field: 'run-' + i + '-spanrow-' + k });
+    });
+    r.posts.forEach(function (x, k) { if (x.spec && !(x.spec.shape && x.spec.size)) items.push({ label: 'Size of ' + postName(r, k).toLowerCase(), field: 'run-' + i + '-post-' + k }); });
+    var setup = P.requirements(p).items.filter(function (x) { return x.where === 'setup' && x.level === 'needed'; });
+    if (!editable()) return '';
+    var li = function (x) { return '<li><button type="button" class="cl-link" data-goto="' + i + '" data-field="' + x.field + '">' + esc(x.label) + '</button></li>'; };
+    return '<section class="panel run-checklist' + (items.length ? '' : ' clear') + '" id="run-checklist" aria-labelledby="rc-title">' +
+      '<h3 id="rc-title">' + (items.length ? 'Checklist: Items still needed <span class="muted">(' + items.length + ')</span>' : '<span class="cl-icon ok" aria-hidden="true">✓</span> This run has everything we need') + '</h3>' +
+      (items.length ? '<ul>' + items.map(li).join('') + '</ul>' : '') +
+      (setup.length ? '<p class="hint">Also for your whole project: <button type="button" class="why-link" data-goto="setup" data-field="' + setup[0].field + '">' + plural(setup.length, 'question') + ' to answer</button></p>' : '') +
+      (items.length ? '<p class="hint">You can switch runs anytime and come back. Nothing here stops you saving or moving on.</p>' : '') +
+      '</section>';
   }
   function totalsLine(r) {
     var s = runSummary(r), sum = r.spans.reduce(function (a, b) { return a + (b > 0 ? b : 0); }, 0);
@@ -541,7 +549,10 @@
     var btn = stage === 'project' ? '<button type="button" class="btn btn-primary" data-stage="review">Review project</button>'
       : stage === 'run' ? (runIdx < p.runs.length - 1 ? '<button type="button" class="btn btn-primary" data-open-run="' + (runIdx + 1) + '">Next run</button>' : '<button type="button" class="btn btn-primary" data-stage="review">Review project</button>')
       : '<button type="button" class="btn btn-primary" data-jump-submit>Submit for review</button>';
-    return '<div class="b-sticky"><span>' + (req.needed ? plural(req.needed, 'item') + ' still needed' : 'Nothing missing') + '</span>' + btn + '</div>';
+    // On a run, count what this run still needs (it matches the checklist above); elsewhere, the whole project.
+    var n = stage === 'run' && p.runs[runIdx] ? runOpen(p.runs[runIdx]) : req.needed;
+    var what = stage === 'run' ? ' on this run' : ' still needed';
+    return '<div class="b-sticky">' + (n ? '<button type="button" class="why-link b-needed" data-show-needed>' + plural(n, 'item') + what + '</button>' : '<span>' + (stage === 'run' ? 'This run is complete' : 'Nothing missing') + '</span>') + btn + '</div>';
   }
   function render() {
     var active = document.activeElement && root.contains(document.activeElement) ? document.activeElement.id : null;
@@ -587,38 +598,10 @@
     clearTimeout(saveTimer);
     var ss = root.querySelector('[data-save-state]'); if (ss) ss.textContent = 'Saving…';
     saveTimer = setTimeout(function () {
-      (LIVE ? saveLive() : Promise.resolve(P.save(p))).then(function (err) {
-        var s2 = root.querySelector('[data-save-state]');
-        if (typeof err === 'string') { if (s2) s2.textContent = err; return; }
-        savedAt = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        if (s2) s2.textContent = 'Saved ' + savedAt;
-      });
-    }, LIVE ? 800 : 400);
-  }
-  // What the server stores: the whole project, plus the runs, height and color it adds up to for the
-  // projects row. The server keeps the state and the messages itself.
-  function payload() {
-    p.updatedAt = new Date().toISOString();
-    var doc = Object.assign({}, p); delete doc.state; delete doc.messages;
-    return { project_id: p.id, builder: doc, runs: p.runs.map(function (r) { return P.runLength(p, r) || r.qin; }), height: p.height, color: p.color };
-  }
-  // Resolves to nothing when saved, or to a short message for the save indicator.
-  function saveLive() {
-    return FT.api('/api/project', { auth: true, body: payload() }).then(function (res) {
-      if (res.ok) return;
-      if (res.status === 409) { p.state = (res.data && res.data.state) || 'submitted'; render(); }
-      return (res.data && res.data.error) || 'Not saved. Check your connection.';
-    }, function () { return 'Not saved. Check your connection.'; });
-  }
-  // Messages go to the team in live mode; the preview keeps them on this device.
-  function sendMessage(text, run, done) {
-    var at = new Date().toISOString();
-    if (!LIVE) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
-    var about = run != null && p.runs[run] ? 'About ' + p.runs[run].name + ': ' : '';
-    FT.api('/api/messages', { auth: true, body: { project_id: p.id, body: about + text } }).then(function (res) {
-      if (res.ok) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
-      FT.toast((res.data && res.data.error) || 'We couldn’t send that. Try again.'); done(false);
-    }, function () { FT.toast('We couldn’t send that. Check your connection and try again.'); done(false); });
+      P.save(p);
+      savedAt = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      var s2 = root.querySelector('[data-save-state]'); if (s2) s2.textContent = 'Saved ' + savedAt;
+    }, 400);
   }
   function rerender() { setTimeout(render, 0); }
   function refreshRunLive(i) {
@@ -701,6 +684,11 @@
     if (d.tabGo) { tab = d.tabGo; render(); window.scrollTo({ top: Math.max(0, root.offsetTop - 70), behavior: 'smooth' }); return; }
     if (d.stage) { go(d.stage); if (b.hasAttribute('data-to-runs')) { var rs3 = root.querySelector('.runs-section'); if (rs3) setTimeout(function () { rs3.scrollIntoView({ block: 'start' }); }, 0); } return; }
     if (d.openRun != null) { go('run', +d.openRun); return; }
+    if (b.hasAttribute('data-show-needed')) {
+      if (stage === 'run' && document.getElementById('run-checklist')) focusIn('run-checklist');
+      else { go('review'); setTimeout(function () { var oi = root.querySelector('.open-items'); if (oi) { oi.scrollIntoView({ behavior: 'smooth', block: 'start' }); flash(oi); } }, 60); }
+      return;
+    }
     if (d.qEdit) { editingQ = d.qEdit; render(); focusIn(d.qEdit); return; }
     if (b.hasAttribute('data-q-done')) {
       var cur = editingQ; editingQ = null; render();
@@ -760,24 +748,16 @@
     if (d.qSend) {
       var qi = +d.qSend, ta = root.querySelector('[data-q="' + qi + '"]');
       if (!ta.value.trim()) { ta.focus(); return; }
-      sendMessage(ta.value.trim(), p.questions[qi].run, function (ok) {
-        if (!ok) return;
-        p.questions[qi].answered = true;
-        if (!LIVE) p.state = 'reply-received';
-        P.log(p, 'You', 'Answered a question'); if (LIVE) persist(); else P.save(p); render(); FT.toast('Reply sent');
-      });
-      return;
+      p.questions[qi].answered = true;
+      p.messages.push({ who: 'You', text: ta.value.trim(), at: new Date().toISOString(), run: p.questions[qi].run });
+      p.state = 'reply-received'; P.log(p, 'You', 'Answered a question'); P.save(p); render(); FT.toast('Reply sent'); return;
     }
     if (b.hasAttribute('data-msg-send')) {
       var txt = root.querySelector('#msg-text'), runSel = root.querySelector('#msg-run');
       if (!txt.value.trim()) { txt.focus(); return; }
-      sendMessage(txt.value.trim(), runSel.value === '' ? null : +runSel.value, function (ok) {
-        if (!ok) return;
-        if (LIVE) { render(); FT.toast('Message sent. We’ll reply here and by email.'); return; }
-        p.messages.push({ who: 'FenceTopper assistant', text: 'Thanks. A member of our build team will reply here. You’ll get an email when they do.', at: new Date().toISOString(), source: 'General explanation' });
-        P.save(p); render();
-      });
-      return;
+      p.messages.push({ who: 'You', text: txt.value.trim(), at: new Date().toISOString(), run: runSel.value === '' ? null : +runSel.value });
+      p.messages.push({ who: 'FenceTopper assistant', text: 'Thanks. A member of our build team will reply here. You’ll get an email when they do.', at: new Date().toISOString(), source: 'General explanation' });
+      P.save(p); render(); return;
     }
     if (b.hasAttribute('data-approve')) {
       var box = root.querySelector('#terms');
@@ -787,10 +767,12 @@
       p.state = 'scheduled'; P.log(p, 'You', 'Approved design version ' + p.finalDesign.version); P.save(p); tab = 'production'; render(); FT.toast('Design approved'); return;
     }
   });
+  function flash(el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1600); }
   function focusIn(id) {
     setTimeout(function () {
       var el = document.getElementById(id); if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      flash(el);
       var f = el.querySelector('input:not([type=hidden]):not(.sr-only):not([disabled]), select, textarea, button');
       if (f) f.focus({ preventScroll: true });
     }, 30);
@@ -801,19 +783,8 @@
     if (!document.getElementById('review-ok').checked) { err.textContent = 'Please confirm your measurements to submit.'; err.hidden = false; document.getElementById('review-ok').focus(); return; }
     var req = P.requirements(p);
     p.openAtSubmit = req.items.map(function (x) { return { level: x.level, label: x.label }; });
-    P.recordEstimate(p, 'Submitted'); P.log(p, 'You', 'Submitted for review' + (req.needed ? ' with ' + plural(req.needed, 'open item') : ''));
-    function done() { p.state = 'submitted'; tab = 'review'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); FT.toast('Submitted. We’ll review your project.'); }
-    if (!LIVE) { p.state = 'submitted'; P.save(p); done(); return; }
-    var btn = root.querySelector('[data-submit]'); if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
-    clearTimeout(saveTimer); // the submit carries the latest project
-    FT.api('/api/submit', { auth: true, body: payload() }).then(function (res) {
-      if (res.ok) { done(); return; }
-      if (btn) { btn.disabled = false; btn.textContent = 'Submit for review'; }
-      err.textContent = (res.data && res.data.error) || 'We couldn’t submit that. Try again.'; err.hidden = false;
-    }, function () {
-      if (btn) { btn.disabled = false; btn.textContent = 'Submit for review'; }
-      err.textContent = 'We couldn’t submit that. Check your connection and try again.'; err.hidden = false;
-    });
+    p.state = 'submitted'; P.recordEstimate(p, 'Submitted'); P.log(p, 'You', 'Submitted for review' + (req.needed ? ' with ' + plural(req.needed, 'open item') : ''));
+    P.save(p); tab = 'review'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); FT.toast('Submitted. We’ll review your project.');
   }
   function thumb(file, cb) {
     var img = new Image(), url = URL.createObjectURL(file);
@@ -827,5 +798,5 @@
     img.src = url;
   }
 
-  if (LIVE) loadLive(); else loadLocal();
+  render();
 })();

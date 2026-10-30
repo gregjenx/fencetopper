@@ -936,3 +936,22 @@ textarea { min-height: 96px; resize: vertical; }
 .mp-send .btn { justify-self: start; }
 .mp-submit { margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--line, #d9d6cc); }
 @media (max-width: 520px) { .mp-facts { grid-template-columns: 1fr; gap: 2px; } .mp-facts dd { margin-bottom: 8px; } }
+
+/* Builder: run switcher and per-run checklist (Greg, 2026-10-30: move freely between runs, show exactly what's missing) */
+.run-switch { margin: 0 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.run-switch ol { list-style: none; margin: 0; padding: 2px; display: flex; gap: 8px; width: max-content; }
+.run-switch button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border: 1px solid var(--line-strong, var(--line)); border-radius: var(--radius-pill, 999px); background: var(--surface); color: var(--ink); font: 600 .95rem var(--font-body); cursor: pointer; }
+.run-switch button[aria-current] { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); background: var(--sage); }
+.rs-count { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--harvest, #e8b04b); color: #262A2D; font-size: .8rem; display: inline-flex; align-items: center; justify-content: center; }
+.rs-done { color: var(--green); font-weight: 800; }
+.run-checklist { margin-bottom: 14px; border-left: 4px solid var(--harvest, #e8b04b); }
+.run-checklist.clear { border-left-color: var(--green); }
+.run-checklist h3 { font-size: 1.05rem; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.run-checklist ul { margin: 0 0 8px; padding-left: 1.2em; display: grid; gap: 6px; }
+.run-checklist .hint { margin: 6px 0 0; }
+.needs-tag { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--harvest, #e8b04b); color: #262A2D; font-size: .75rem; font-weight: 700; letter-spacing: .02em; }
+.seq-span.unsure .needs-tag { background: var(--sage); color: var(--ink); }
+.b-sticky .b-needed { font-weight: 700; text-align: left; }
+@keyframes ft-flash { 0% { box-shadow: 0 0 0 0 rgb(232 176 75 / .0); } 20% { box-shadow: 0 0 0 4px rgb(232 176 75 / .65); } 100% { box-shadow: 0 0 0 0 rgb(232 176 75 / 0); } }
+.flash { animation: ft-flash 1.5s ease-out; border-radius: var(--radius); }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; outline: 3px solid var(--harvest, #e8b04b); } }
