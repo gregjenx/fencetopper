@@ -82,7 +82,35 @@
     setTimeout(function () { t.remove(); }, 2600);
   }
 
-  window.FT = { link: link, store: store, quote: quote, clampHeight: clampHeight, heightHint: heightHint, heightStepper: heightStepper, money: money, fmtLen: fmtLen, cart: cart, setCart: setCart, toast: toast, PRICING: PRICING };
+  // ---------- Saved-project sign-in (Phase 1 backend, functions/api) ----------
+  // The session comes from the emailed "Open my project" link. api() sends it and refreshes it once if it expired.
+  var session = {
+    get: function () { return store.get('session', null); },
+    set: function (s) { store.set('session', s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: Date.now() + (Number(s.expires_in) || 3600) * 1000 } : null); },
+    clear: function () { store.set('session', null); store.set('editing', null); },
+  };
+  function api(path, opts) {
+    opts = opts || {};
+    function go(token) {
+      var h = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (token) h.Authorization = 'Bearer ' + token;
+      return fetch(path, { method: opts.method || (opts.body ? 'POST' : 'GET'), headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined })
+        .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { status: r.status, ok: r.ok, data: j }; }); });
+    }
+    var s = opts.auth ? session.get() : null;
+    if (!s) return go(null);
+    function refresh() {
+      return fetch('/api/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) })
+        .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+        .then(function (j) { if (j && j.access_token) { session.set(j); return j.access_token; } session.clear(); return null; });
+    }
+    var start = s.expires_at && s.expires_at < Date.now() + 30000 ? refresh() : Promise.resolve(s.access_token);
+    return start.then(function (t) {
+      return go(t).then(function (res) { return res.status === 401 && t ? refresh().then(function (t2) { return t2 ? go(t2) : res; }) : res; });
+    });
+  }
+
+  window.FT = { link: link, store: store, quote: quote, clampHeight: clampHeight, heightHint: heightHint, heightStepper: heightStepper, money: money, fmtLen: fmtLen, cart: cart, setCart: setCart, toast: toast, PRICING: PRICING, session: session, api: api };
 
   // ---------- Mobile menu ----------
   var toggle = document.querySelector('[data-menu-toggle]');

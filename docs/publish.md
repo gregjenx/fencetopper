@@ -7,7 +7,7 @@ The site is a static Astro build. `npm run build` writes plain files to `dist/`,
 Greg chose this version on 2026-10-28. The switch is in `src/data/site.ts`:
 
 - `features.builder: false` leaves the Builder, My projects, sign-in and staff pages out of the build, and removes the account icon from the header. Set it to `true` to bring them back once they have a server, real accounts and a database.
-- In Shop, "Build my Topper" now asks for the customer's name, email, optional mobile and notes, then sends you their runs, height, color, estimate and chosen extender. There's no code step and no payment.
+- In Shop, "Build my Topper" opens "Save your project". It asks for the customer's name, email, optional mobile and notes, saves the estimate on their device, and sends you a copy with the subject "New project saved: {first} {last}". The saved screen lists their next steps (photos, Visualizer, measurements, submit for review), and Shop greets them by name when they come back. There's no code step, no customer email yet, and no payment.
 - `forms.endpoint` decides where those requests and the contact form go. Cloudflare Pages has no built-in forms, so a form service relays each submission to support@fencetopper.com. Any service that accepts a JSON POST works:
   1. Sign up at formspree.io, which has a free tier.
   2. Create a form that delivers to support@fencetopper.com.
@@ -19,6 +19,7 @@ Greg chose this version on 2026-10-28. The switch is in `src/data/site.ts`:
 
 | Item | Where |
 |---|---|
+| Saved projects with an emailed link (optional) | `docs/backend-setup.md`: Supabase, Resend and five secrets in Cloudflare. Until then, saving uses Formspree |
 | Checkout | `src/pages/cart.astro` isn't connected to payment. Leave it as is, or hide the cart icon |
 | Other "Placeholder" tags | Shipping policy, box contents, ratings and similar, marked on the pages |
 

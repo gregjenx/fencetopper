@@ -1,0 +1,44 @@
+---
+// Phase 1 "Open my project": where the emailed link lands. Shows the customer's saved projects and lets
+// them edit runs in Shop, see it on their fence, message us and submit for review. Needs the backend
+// in functions/api (see docs/backend-setup.md); without it the page says so and points back to Shop.
+import Base from '../layouts/Base.astro';
+import { brand, assetVersion } from '../data/site';
+---
+<Base title="My project" path="/my-project" noindex description={`Your saved ${brand.name} project.`}>
+  <section class="page-head wrap">
+    <span class="eyebrow">My project</span>
+    <h1 id="mp-title">Your project</h1>
+    <p class="lead" id="mp-lead">Pick up where you left off.</p>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap mp">
+      <div class="panel" id="mp-loading"><p class="muted" style="margin:0">Opening your project…</p></div>
+
+      <div class="panel mp-signin" id="mp-signin" hidden>
+        <h2>Open your project</h2>
+        <p id="mp-signin-why">Use the “Open my project” button in the email we sent when you saved it. If you can’t find it, we’ll send a new link.</p>
+        <form id="mp-signin-form" class="sheet-form" novalidate>
+          <div class="field"><label for="mp-email">Email</label><input id="mp-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required /></div>
+          <p class="field-error" id="mp-signin-error" role="alert" hidden></p>
+          <button class="btn btn-primary" type="submit">Email me a link</button>
+        </form>
+        <p class="note" id="mp-signin-sent" hidden>If that email has a saved project, a new link is on its way. It works for 24 hours.</p>
+        <p class="muted" style="margin:14px 0 0">No project yet? <a class="link" href="/shop">Get your price</a> and save it.</p>
+      </div>
+
+      <div class="panel" id="mp-off" hidden>
+        <h2>Your project is saved on this device</h2>
+        <p>Project accounts aren’t switched on yet, so your saved estimate lives in this browser. <a class="link" href="/shop">Open it in Shop</a> to change it, or email <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a> with photos or questions.</p>
+      </div>
+
+      <div id="mp-projects" hidden></div>
+      <p class="muted" id="mp-account" hidden></p>
+    </div>
+  </section>
+
+  <Fragment slot="scripts">
+    <script is:inline src={`/js/my-project.js?v=${assetVersion}`} defer></script>
+  </Fragment>
+</Base>

@@ -173,6 +173,9 @@ a { color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.12; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
 h1 { font-size: clamp(2.1rem, 6.5vw, 3.6rem); font-weight: 800; }
+/* Home hero heading: two set lines from 860px, sized so "Custom Privacy Toppers" fits the copy column. */
+.br-md { display: none; }
+@media (min-width: 860px) { .br-md { display: inline; } .hero h1 { font-size: clamp(1.9rem, calc(4.3vw - 4px), 3rem); text-wrap: nowrap; } }
 h2 { font-size: clamp(1.6rem, 4.4vw, 2.4rem); font-weight: 800; }
 h3 { font-size: 1.2rem; font-weight: 700; }
 p { margin: 0; }
@@ -204,6 +207,9 @@ p { margin: 0; }
 
 /* Announcement + header */
 .announce { background: var(--green); color: var(--on-green); text-align: center; font-weight: 600; font-size: .95rem; padding: 8px var(--gutter); }
+.announce a { color: inherit; text-decoration: none; }
+.announce a span { text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.announce a:hover span { text-decoration-thickness: 2px; }
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .site-header .header-bar { display: flex; align-items: center; gap: 12px; min-height: 64px; }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 1.45rem/1 var(--font-display); letter-spacing: -0.03em; }
@@ -252,7 +258,7 @@ p { margin: 0; }
 .hero-spec span { font-variant-numeric: tabular-nums; }
 @media (min-width: 860px) {
   .hero { padding-block: 48px 64px; }
-  .hero-grid { grid-template-columns: 1fr 1.15fr; gap: 48px; }
+  .hero-grid { grid-template-columns: 1.1fr 1fr; gap: 48px; }
   .hero-ctas { grid-template-columns: 1fr 1fr; }
   .hero-links { justify-content: flex-start; }
 }
@@ -900,3 +906,33 @@ textarea { min-height: 96px; resize: vertical; }
 .ov-fit { margin: 0; font-size: .92rem; color: var(--muted); }
 .runs-section { display: grid; gap: 12px; }
 .runs-section > p { margin: 0; }
+
+/* Shop saved screen: next steps the customer can take */
+.next-steps { margin: 0 0 14px; padding-left: 1.3em; display: grid; gap: 8px; }
+.next-steps li { padding-left: 2px; }
+#welcome-back { margin-top: 12px; }
+
+/* Spam trap on the save sheet: hidden from people, filled in by bots */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* My project (Phase 1) */
+.mp { display: grid; gap: 18px; max-width: 760px; }
+#mp-projects { display: grid; gap: 18px; }
+.mp-card h2 { font-size: 1.4rem; margin: 0; }
+.mp-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.mp-next { margin: 8px 0 14px; color: var(--muted); }
+.mp-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0 0 16px; }
+.mp-facts dt { color: var(--muted); }
+.mp-facts dd { margin: 0; min-width: 0; }
+.mp-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+.mp-sub { font-size: 1.05rem; margin: 22px 0 8px; }
+.mp-photos { margin: 0; }
+.mp-msgs { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.mp-msg { padding: 10px 12px; border-radius: var(--radius); background: var(--sage); }
+.mp-msg.staff { background: var(--surface, #fff); border: 1px solid var(--line, #d9d6cc); }
+.mp-msg-who { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 2px; }
+.mp-send { display: grid; gap: 8px; }
+.mp-send textarea { min-height: 88px; }
+.mp-send .btn { justify-self: start; }
+.mp-submit { margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--line, #d9d6cc); }
+@media (max-width: 520px) { .mp-facts { grid-template-columns: 1fr; gap: 2px; } .mp-facts dd { margin-bottom: 8px; } }

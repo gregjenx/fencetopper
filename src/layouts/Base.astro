@@ -17,7 +17,7 @@ const { title, description, path, image = '/img/og.jpg', schema = [], breadcrumb
 const staff = variant === 'staff';
 const staffNav = [{ href: '/staff', label: 'Queue' }, { href: '/staff-rates', label: 'Rates' }];
 const canonical = brand.url + (path === '/' ? '/' : path);
-const fullTitle = path === '/' ? `${brand.name} | ${brand.tagline.replace(/\.$/, '')}` : `${title} | ${brand.name}`;
+const fullTitle = path === '/' ? `${brand.homeTitle} | ${brand.name}` : `${title} | ${brand.name}`;
 
 const org = {
   '@context': 'https://schema.org',
@@ -86,7 +86,7 @@ const ld = [org, site, crumbs, ...schema].filter(Boolean);
     </div>
   </header>
   ) : (<Fragment>
-  <div class="announce">Custom Toppers for Existing Fences.</div>
+  <div class="announce"><a href="/shop">Measure online, see your price, and we ship to your door. <span aria-hidden="true">Get my price &rarr;</span></a></div>
   <header class="site-header">
     <div class="wrap header-bar">
       <a class="logo" href="/" aria-label={`${brand.name} home`}>

@@ -6,7 +6,7 @@ import HeightStepper from '../components/HeightStepper.astro';
 const offer = {
   '@context': 'https://schema.org',
   '@type': 'Product',
-  name: 'FenceTopper privacy fence extension',
+  name: `${brand.name} ${brand.descriptor}`,
   brand: { '@type': 'Brand', name: brand.name },
   description: brand.description,
   image: brand.url + '/img/hero-evergreen.webp',
@@ -20,12 +20,13 @@ const offer = {
   },
 };
 ---
-<Base title="Build Your Fence Topper and Get a Price" path="/shop" breadcrumb="Shop" schema={[offer]}
-  description="Enter your fence measurements, choose a topper height from 12 to 24 inches and a color, and get an instant FenceTopper estimate.">
+<Base title="Price a Custom Fence Extension" path="/shop" breadcrumb="Shop" schema={[offer]}
+  description="Enter your fence runs, choose an extension height from 12 to 24 inches and a color, and get an instant price for a custom fence extension.">
   <section class="page-head wrap">
     <span class="eyebrow">Shop</span>
     <h1>Get your price.</h1>
     <p class="lead">Enter each straight run of fence, choose height and color, and see your estimate. <a class="link" href="/measure">How to measure</a></p>
+    {!features.builder && <p class="note" id="welcome-back" hidden></p>}
   </section>
 
   <section class="section-tight">
@@ -64,7 +65,7 @@ const offer = {
       </div>
 
       <aside class="panel summary" aria-labelledby="sum-title">
-        <h2 id="sum-title" style="font-size:1.4rem">Your FenceTopper</h2>
+        <h2 id="sum-title" style="font-size:1.4rem">Your fence extension</h2>
         <div class="preview-strip"><canvas id="strip" width="800" height="120" aria-hidden="true" style="width:100%;height:auto;display:block"></canvas></div>
         <dl id="summary" aria-live="polite"></dl>
         <p class="hint" style="font-size:.9rem;color:var(--muted)">This is an estimate. Your final price comes with your design, after we review your measurements.</p>
@@ -76,8 +77,11 @@ const offer = {
 
   <dialog class="sheet" id="save-sheet" aria-labelledby="save-title">
     <div class="sheet-body" data-step="details">
-      <h2 id="save-title">{features.builder ? 'Save your project' : 'Send us your project'}</h2>
-      {!features.builder && <p>We’ll review your runs and email you about measuring, extensions and your final price. No payment now.</p>}
+      <h2 id="save-title">Save your project</h2>
+      {!features.builder && <Fragment>
+        <p data-show="local">Your project stays in your hands. Save it now and come back to it anytime on this device. When you’re ready, we’ll help check your measurements. No payment now.</p>
+        <p data-show="account" hidden>Your project stays in your hands. Save it now, then come back anytime to add photos, see it on your fence and fine-tune your runs. No payment now.</p>
+      </Fragment>}
       <p class="muted" data-build-summary></p>
       <form id="details-form" class="sheet-form" novalidate>
         <div class="name-row">
@@ -94,9 +98,10 @@ const offer = {
           </div>
         </div>)}
         {!features.builder && <div class="field"><label for="s-notes">Anything we should know? <span class="muted">(optional)</span></label><textarea id="s-notes" placeholder="Your extensions, post sizes, a slope, a gate"></textarea></div>}
-        <label class="check" for="s-consent"><input id="s-consent" type="checkbox" /> <span>{features.builder ? 'Send me reminders about my project.' : 'Email me tips and updates about FenceTopper.'}</span></label>
+        <div class="hp" aria-hidden="true"><label for="s-company">Company</label><input id="s-company" type="text" tabindex="-1" autocomplete="off" /></div>
+        <label class="check" for="s-consent"><input id="s-consent" type="checkbox" /> <span>{features.builder ? 'Send me reminders about my project.' : 'Email me tips and offers.'}</span></label>
         <p class="field-error" id="details-error" role="alert" hidden></p>
-        <button class="btn btn-primary btn-block" type="submit">{features.builder ? 'Send my code' : 'Send my project'}</button>
+        <button class="btn btn-primary btn-block" type="submit">{features.builder ? 'Send my code' : 'Save my project'}</button>
         <button class="btn btn-outline btn-block" type="button" data-close-sheet>Keep editing</button>
       </form>
     </div>
@@ -123,11 +128,26 @@ const offer = {
     </Fragment>)}
     {!features.builder && (
     <div class="sheet-body" data-step="sent" hidden>
-      <h2>Thanks, <span data-first></span>. We have your project.</h2>
+      <h2><span data-show="local account">You’re all set, <span data-first></span>.</span><span data-show="updated" hidden>Your changes are saved.</span></h2>
+      <p data-show="local" data-sent-copy>Your project is saved on this device, and we have a copy so we can help when you’re ready.</p>
+      <p class="note alert" data-not-sent hidden>Your project is saved on this device, but our copy didn’t reach us. Save it again later, or email it to <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a>.</p>
+      <p data-show="account" hidden><strong>Your project is saved.</strong> <span data-email-sent>We sent a link to <strong data-dest></strong>. Open it to confirm your email, and use it to pick up where you left off on any device.</span><span data-email-failed hidden>We couldn’t send your link just now. Use “Email me a link” on <a class="link" href="/my-project">your project page</a> to get one.</span></p>
+      <p data-show="updated" hidden>Your project now has these runs, height and color. Open it to send us a message or submit it for review.</p>
       <p class="muted" data-build-summary></p>
-      <p>We’ll email <strong data-dest></strong> to go over your measurements, your post extensions and your final price. You don’t pay anything until you approve the design.</p>
-      <p class="note alert" data-not-sent hidden>The request form isn’t connected to an inbox yet, so this wasn’t sent. <span class="placeholder">Placeholder</span></p>
-      <button class="btn btn-primary btn-block" type="button" data-close-sheet>Done</button>
+      <div data-show="local account">
+        <p style="margin-bottom:6px">Here’s what you can do next, whenever you’re ready:</p>
+        <ol class="next-steps">
+          <li><strong>Add photos of each run.</strong> <span data-show="local">Email them to <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a> whenever you have them.</span><span data-show="account" hidden>For now, reply to our email with them.</span></li>
+          <li><strong><a class="link" href="/visualizer">See it on your fence</a></strong> in the Visualizer.</li>
+          <li><strong><a class="link" href="/measure">Check your measurements</a></strong> with the measuring guide.</li>
+          <li><strong>Submit for review.</strong> When it looks right, <span data-show="local"><a class="link" href="/contact">tell us you’re ready</a></span><span data-show="account" hidden>submit it from your project</span>. We check everything before anything is built, and you approve the final design.</li>
+        </ol>
+        <p data-show="local">If we have a question, we’ll email <strong data-dest></strong>. Otherwise, the next step is yours.</p>
+        <p data-show="account" hidden class="muted">Questions? Reply to our email or message us from your project.</p>
+      </div>
+      <button class="btn btn-primary btn-block" type="button" data-open-saved data-show="local account">Open my project</button>
+      <a class="btn btn-primary btn-block" href="/my-project" data-show="updated" hidden>Open my project</a>
+      <a class="btn btn-outline btn-block" href="/visualizer">See it on my fence</a>
     </div>
     )}
     {features.builder && (

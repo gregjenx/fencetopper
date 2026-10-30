@@ -10,8 +10,12 @@ export const brand = {
   domain: 'fencetopper.com',
   url: 'https://fencetopper.com',
   tagline: 'Extend privacy to your backyard.',
+  // Greg, 2026-10-29: the descriptive name people search by, used in the home title and schema.
+  descriptor: 'Fence Extension Privacy System',
+  homeTitle: 'Custom-Fit Privacy Toppers for Existing Fences',
+  subhead: 'A fence extension privacy system that raises your fence up to 2 feet.',
   description:
-    'FenceTopper adds 12 to 24 inches of privacy, in 1 inch steps, above your existing fence. A tensioned outdoor mesh panel runs between posts you install above your fence. Measured online, built to your runs.',
+    'Custom-fit privacy toppers for existing fences. FenceTopper is a fence extension privacy system that raises your fence up to 2 feet (12 to 24 in, in 1 in steps) without replacing it. A tensioned outdoor mesh panel runs between extension posts on your existing fence. Measured online, built to your runs.',
   email: 'support@fencetopper.com',
   phone: '(406) 306-0663',
 };
@@ -94,8 +98,13 @@ export const extenderOptions = [
 export const faqs = [
   {
     q: 'What is FenceTopper?',
-    a: 'FenceTopper is a privacy extension that mounts above your existing fence. A tensioned outdoor mesh panel runs between posts you install above your fence and adds 12 to 24 inches of screening, in 1 inch steps, without replacing the fence.',
+    a: 'FenceTopper is a fence extension privacy system. A tensioned outdoor mesh panel runs between extension posts on your existing fence and adds 12 to 24 inches of screening, in 1 inch steps, so you can make your fence taller without replacing it.',
     tags: ['what', 'product', 'about', 'is'],
+  },
+  {
+    q: 'How do I make my fence taller without replacing it?',
+    a: 'Add extension posts to your existing fence posts, then mount a fence extension between them. On chain link and other round steel posts, extenders slide into or over 2 3/8 in or 1 5/8 in posts. On wood fences, extenders fasten to the face or side of 4x4 posts. A mesh extension panel then adds 12 to 24 inches of privacy above the fence.',
+    tags: ['taller', 'raise', 'add height', 'extend', 'higher', 'increase', 'replace'],
   },
   {
     q: 'How tall should my fence topper be?',
@@ -118,8 +127,8 @@ export const faqs = [
     tags: ['tools', 'drill', 'need', 'hardware'],
   },
   {
-    q: 'Does it work on wood, vinyl and composite fences?',
-    a: 'FenceTopper is shown on cedar, horizontal slat, painted wood and composite fences. You or your contractor attach fence extenders to your existing fence posts, and the panel mounts between them. Send us a photo through support if you are unsure about your fence.',
+    q: 'Does it work on chain link, wood, vinyl and composite fences?',
+    a: 'The extension mounts on posts, not on the fence face, so it works on most fence types. Chain link and other round steel posts take extenders sized to the post. Wood fences use extenders fastened to 4x4 posts. It’s shown on cedar, horizontal slat, painted wood and composite fences. Send us a photo through support if you’re unsure about your fence.',
     tags: ['vinyl', 'wood', 'composite', 'cedar', 'metal', 'fence type', 'chain', 'work', 'material'],
   },
   {
@@ -149,7 +158,7 @@ export const faqs = [
   },
   {
     q: 'Do I need permission from my HOA or city?',
-    a: 'Many cities limit backyard fence height to 6 to 8 ft, and HOAs may have their own rules. Check your local code and HOA before you order. Because FenceTopper comes in 1 inch steps from 12 to 24 inches, it’s easy to pick the tallest topper that stays under your limit.',
+    a: 'Many cities limit backyard fence height to 6 to 8 ft, and HOAs may have their own rules. Check your local code and HOA before you order. Because the extension comes in 1 inch steps from 12 to 24 inches, it’s easy to pick the tallest one that stays under your limit.',
     tags: ['hoa', 'permit', 'city', 'code', 'legal', 'allowed', 'regulation', 'neighbor'],
   },
   {
@@ -163,8 +172,8 @@ export const faqs = [
     tags: ['remove', 'winter', 'take down', 'store', 'season'],
   },
   {
-    q: 'Are posts included with FenceTopper?',
-    a: 'No. You or your contractor provide and install the fence extenders, the posts that hold the topper above your fence. Our Fence extenders page shows the options by fence type, and FenceTopper builds the panel to fit your approved layout.',
+    q: 'Are fence post extenders included?',
+    a: 'No. You or your contractor provide and install the fence post extenders that hold the panel above your fence. Our Fence extenders page shows the options by fence type, and we build the panel to fit your approved layout.',
     tags: ['posts', 'included', 'extender', 'extenders', 'supply', 'provide', 'hardware'],
     topic: 'extenders',
   },

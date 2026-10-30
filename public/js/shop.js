@@ -265,32 +265,72 @@
     setTimeout(function () { document.getElementById(project.first ? 's-email' : 's-first').focus(); }, 50);
   });
 
-  // Launch mode (no Builder yet): send the estimate and contact details to the team.
+  // Launch mode (no Builder yet). With the Phase 1 backend switched on (functions/api/projects.js has its
+  // keys), saving creates the customer's project and emails them an "Open my project" link. Without it, or
+  // if it fails, the request goes to the team through Formspree and the project stays on this device.
   var BUILDER = !!(window.FT_FEATURES || {}).builder;
+  var accountMode = false;
+  function setMode(mode) {
+    sheet.querySelectorAll('[data-show]').forEach(function (el) { el.hidden = el.dataset.show.split(' ').indexOf(mode) < 0; });
+  }
+  if (!BUILDER) {
+    setMode('local');
+    fetch('/api/projects', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (j) { accountMode = !!(j && j.configured); setMode(accountMode ? 'account' : 'local'); });
+  }
   function sendProject(v) {
     project.first = v('s-first'); project.last = v('s-last'); project.email = v('s-email'); project.mobile = v('s-mobile');
     project.notes = v('s-notes'); project.updates = document.getElementById('s-consent').checked; project.via = 'email';
     FT.store.set('contact', { first: project.first, last: project.last, email: project.email, mobile: project.mobile });
-    var endpoint = (window.FT_FORMS || {}).endpoint;
-    var payload = {
-      _subject: 'FenceTopper project: ' + project.first + ' ' + project.last,
-      name: project.first + ' ' + project.last, email: project.email, mobile: project.mobile,
-      summary: project.label, runs: project.runQin.map(function (q) { var fr = ['', ' 1/4', ' 1/2', ' 3/4'][q % 4]; return Math.floor(q / 48) + ' ft ' + Math.floor((q % 48) / 4) + fr + ' in'; }).join(', '),
-      height_in: project.height, color: project.color, estimate: FT.money(project.estimate),
-      extender: project.extender ? project.extender.name : '', notes: project.notes, wants_updates: project.updates ? 'yes' : 'no',
-    };
     var btn = detailsForm.querySelector('button[type=submit]');
-    var done = function (sent) {
-      btn.disabled = false; btn.textContent = 'Send my project';
-      fill(); sheet.querySelector('[data-not-sent]').hidden = sent; showStep('sent');
-      var projects = FT.store.get('projects', []) || []; project.state = sent ? 'sent' : 'not-sent'; projects.push(project); FT.store.set('projects', projects);
-      sheet.querySelector('[data-step="sent"] [data-close-sheet]').focus();
-    };
-    if (!endpoint) { done(false); return; }
-    btn.disabled = true; btn.textContent = 'Sending…';
-    fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); done(true); })
-      .catch(function () { btn.disabled = false; btn.textContent = 'Send my project'; detailsErr.textContent = 'We couldn’t send that. Check your connection and try again, or email us.'; detailsErr.hidden = false; });
+    var editing = FT.store.get('editing', null);
+    function finish(mode, info) {
+      info = info || {};
+      btn.disabled = false; btn.textContent = 'Save my project';
+      fill(); setMode(mode);
+      sheet.querySelector('[data-not-sent]').hidden = mode !== 'local' || info.sent;
+      sheet.querySelector('[data-sent-copy]').hidden = mode !== 'local' || !info.sent;
+      sheet.querySelector('[data-email-sent]').hidden = !info.emailSent;
+      sheet.querySelector('[data-email-failed]').hidden = !!info.emailSent;
+      project.state = mode === 'local' ? (info.sent ? 'sent' : 'not-sent') : 'saved';
+      project.serverId = info.projectId || null; project.mode = mode;
+      if (mode !== 'updated') { var projects = FT.store.get('projects', []) || []; projects.push(project); FT.store.set('projects', projects); }
+      showStep('sent');
+      var focus = sheet.querySelector('[data-step="sent"] .btn-primary:not([hidden])'); if (focus) focus.focus();
+    }
+    function fail(msg) {
+      btn.disabled = false; btn.textContent = 'Save my project';
+      detailsErr.textContent = msg; detailsErr.hidden = false;
+    }
+    // Formspree: the launch path, and the fallback when the backend is off or down.
+    function viaFormspree() {
+      var endpoint = (window.FT_FORMS || {}).endpoint;
+      var payload = {
+        _subject: 'New project saved: ' + project.first + ' ' + project.last,
+        name: project.first + ' ' + project.last, email: project.email, mobile: project.mobile,
+        summary: project.label, runs: project.runQin.map(function (q) { var fr = ['', ' 1/4', ' 1/2', ' 3/4'][q % 4]; return Math.floor(q / 48) + ' ft ' + Math.floor((q % 48) / 4) + fr + ' in'; }).join(', '),
+        height_in: project.height, color: project.color, estimate: FT.money(project.estimate),
+        extender: project.extender ? project.extender.name : '', notes: project.notes, wants_updates: project.updates ? 'yes' : 'no',
+      };
+      if (!endpoint) { finish('local', { sent: false }); return; }
+      fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); finish('local', { sent: true }); })
+        .catch(function () { fail('We couldn’t save that. Check your connection and try again, or email us.'); });
+    }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    if (!accountMode) { viaFormspree(); return; }
+    FT.api('/api/projects', { auth: !!editing, body: {
+      first: project.first, last: project.last, email: project.email, mobile: project.mobile, notes: project.notes,
+      marketing: project.updates, runs: project.runQin, height: project.height, color: project.color,
+      extender: project.extender ? { id: project.extender.id, name: project.extender.name } : null,
+      project_id: editing ? editing.projectId : undefined, company: v('s-company'),
+    } }).then(function (res) {
+      var j = res.data || {};
+      if (res.ok && j.saved) finish(j.updated ? 'updated' : 'account', j);
+      else if (res.status === 400 && j.error) fail(j.error);
+      else viaFormspree();
+    }, viaFormspree);
   }
 
   function describeName(pr) { return (pr.last ? pr.last + ' fence' : 'My FenceTopper'); }
@@ -387,6 +427,22 @@
   });
   sheet.addEventListener('close', stopResend);
   sheet.querySelectorAll('[data-close-sheet]').forEach(function (b) { b.addEventListener('click', closeSheet); });
+  // Saved screen: "Open my project" returns to the estimate, which stays loaded in Shop.
+  var openSaved = sheet.querySelector('[data-open-saved]');
+  if (openSaved) openSaved.addEventListener('click', function () { closeSheet(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  // Returning customer: say their saved project is loaded, or which project they're editing.
+  var wb = document.getElementById('welcome-back'), wbContact = FT.store.get('contact', {}) || {};
+  var wbEditing = FT.store.get('editing', null), wbSaved = FT.store.get('projects', []) || [];
+  function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; }
+  if (wb && wbEditing && FT.session.get()) {
+    wb.innerHTML = 'You’re editing <strong>' + esc(wbEditing.name) + '</strong>. Change your runs, height or color, then save to update it. <a class="link" href="/my-project">Back to my project</a>';
+    wb.hidden = false;
+  } else if (wb && wbContact.first && draft && wbSaved.length) {
+    var hasAccount = wbSaved.some(function (p) { return p.mode === 'account'; });
+    wb.innerHTML = 'Welcome back, ' + esc(wbContact.first) + '. Your saved project is loaded below. Change anything you like, then save it again.' +
+      (hasAccount ? ' <a class="link" href="/my-project">Open my project</a> to use it on any device.' : '');
+    wb.hidden = false;
+  }
   sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
 
   update();

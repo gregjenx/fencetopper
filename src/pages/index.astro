@@ -13,7 +13,7 @@ const homeFaqs = faqs.slice(1, 5);
 const product = {
   '@context': 'https://schema.org',
   '@type': 'Product',
-  name: 'FenceTopper privacy fence extension',
+  name: `${brand.name} ${brand.descriptor}`,
   brand: { '@type': 'Brand', name: brand.name },
   description: brand.description,
   image: [brand.url + '/img/hero-evergreen.webp', brand.url + '/img/construction.webp'],
@@ -30,8 +30,8 @@ const faqLd = {
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <h1>Extend Privacy to your backyard.</h1>
-        <p class="lead">Add privacy where your existing fence falls short. Measure online, choose a color, and order a topper designed for DIY installation.</p>
+        <h1>Custom Privacy Toppers<br class="br-md" /> for Existing Fences.</h1>
+        <p class="lead">{brand.subhead} Measure online, choose a color, and install it yourself.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary" href="/shop">Order Now</a>
           <a class="btn btn-outline" href="/visualizer">Try the Visualizer</a>
@@ -45,12 +45,12 @@ const faqLd = {
         </div>
       </div>
       <div class="hero-img">
-        <img src="/img/hero-evergreen.webp" srcset="/img/hero-evergreen-800.webp 800w, /img/hero-evergreen.webp 1600w" sizes="(min-width: 860px) 55vw, 100vw" width="1600" height="1067" alt="Evergreen FenceTopper mesh panel installed above a gray wood fence in a shaded garden" fetchpriority="high" />
+        <img src="/img/hero-evergreen.webp" srcset="/img/hero-evergreen-800.webp 800w, /img/hero-evergreen.webp 1600w" sizes="(min-width: 860px) 55vw, 100vw" width="1600" height="1067" alt="Evergreen mesh fence extension panel installed above a gray wood fence in a shaded garden" fetchpriority="high" />
       </div>
     </div>
   </section>
 
-  <section class="band" aria-label="Why FenceTopper">
+  <section class="band" aria-label="Why this fence extension">
     <div class="wrap">
       <div class="features">
         <div class="feature"><Icon name="ruler" />Easy to measure</div>
@@ -65,7 +65,7 @@ const faqLd = {
     <div class="wrap">
       <div class="section-head center">
         <h2>More privacy. Inside and out.</h2>
-        <p class="lead" style="margin-inline:auto">See how a fence topper can create more comfortable outdoor and indoor spaces.</p>
+        <p class="lead" style="margin-inline:auto">See how adding height to your existing fence creates more comfortable outdoor and indoor spaces.</p>
       </div>
       <div class="cards">
         {useCases.map((u) => (
@@ -112,7 +112,7 @@ const faqLd = {
       <div class="section-head center"><h2>Measure. Choose. Install.</h2></div>
       <ol class="steps row">
         <li class="step"><span class="step-num">01</span><div><h3>Measure your fence</h3><p>Follow the guide to measure each fence run, corners and post spacing.</p></div></li>
-        <li class="step"><span class="step-num">02</span><div><h3>Choose your topper</h3><p>Select your height and color. See your price before checkout.</p></div></li>
+        <li class="step"><span class="step-num">02</span><div><h3>Choose your extension</h3><p>Select your height and color. See your price before checkout.</p></div></li>
         <li class="step"><span class="step-num">03</span><div><h3>Install it yourself</h3><p>Use the step-by-step guide with a drill and level, and get help when you need it.</p></div></li>
       </ol>
       <p style="text-align:center;margin-top:18px"><a class="link" href="/measure">Explore the DIY Guide</a></p>

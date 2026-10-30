@@ -6,7 +6,7 @@ export function GET() {
 
 > ${brand.description}
 
-${brand.name} (${brand.domain}) sells a modular privacy extension that mounts on top of an existing backyard fence. Tagline: "${brand.tagline}"
+${brand.name} (${brand.domain}) sells a ${brand.descriptor.toLowerCase()}: a modular mesh panel that raises an existing backyard fence up to 2 feet, mounted on extension posts. It works on chain link and round steel posts (2 3/8 in and 1 5/8 in) and wood 4x4 posts. Tagline: "${brand.tagline}"
 
 ## Key facts
 - Heights: ${heights.min} to ${heights.max} in, in ${heights.step} in steps. ${heights.default} in is most popular and turns a 6 ft fence into 7 ft 6 in.
@@ -19,7 +19,7 @@ ${specs.map(([k, v]) => `- ${k}: ${v}`).join('\n')}
 - [Price builder](${brand.url}/shop): enter fence runs, height and color for an estimate, then send it to us for review.
 - [Visualizer](${brand.url}/visualizer): preview a to-scale topper on a photo of your fence.
 - [Measuring guide](${brand.url}/measure): how to measure a fence for a topper.
-- [Fence extenders](${brand.url}/fence-extenders): the customer-supplied posts that hold the topper, with the extender options by fence type.
+- [Fence post extenders](${brand.url}/fence-extenders): the customer-supplied extension posts for chain link, round steel and wood fences, with cut lengths and leveling.
 - [Installation guide](${brand.url}/install): seven-step DIY installation.
 - [How it's built](${brand.url}/product): construction and specifications.
 - [FAQ](${brand.url}/faq)
