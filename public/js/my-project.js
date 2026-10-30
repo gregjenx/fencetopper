@@ -1,5 +1,6 @@
 /* My project (Phase 1): signs the customer in from their emailed link, then shows their saved projects.
    They can edit runs in Shop, see it on their fence, message us, and submit for review when ready.
+   With the Builder on (features.builder), Continue opens the project in the Builder, which handles the runs and submit.
    Talks to functions/api/me, messages, submit and login through FT.api (public/js/site.js). */
 (function () {
   'use strict';
@@ -15,6 +16,7 @@
   };
   function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
   function show(id) { ['mp-loading', 'mp-signin', 'mp-off', 'mp-projects'].forEach(function (k) { $(k).hidden = k !== id; }); $('mp-account').hidden = id !== 'mp-projects'; }
+  var BUILDER = !!(window.FT_FEATURES || {}).builder;
   function date(s) { return s ? new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''; }
 
   // 1. Arriving from the email link: Supabase puts the session (or an error) in the address hash.
@@ -90,15 +92,17 @@
       '<dt>Estimate</dt><dd><strong>' + esc(p.estimate) + '</strong> <span class="muted">Your final price comes with your design.</span></dd>' +
       '<dt>Saved</dt><dd>' + esc(date(p.created_at)) + (p.updated_at && p.updated_at !== p.created_at ? ' · updated ' + esc(date(p.updated_at)) : '') + '</dd></dl>' +
       '<div class="mp-actions">' +
-        (open ? '<button class="btn btn-outline" type="button" data-edit>Edit runs, height or color</button>' : '') +
+        (BUILDER ? '<a class="btn btn-primary" href="' + FT.link('/project') + '#p=' + encodeURIComponent(p.id) + '">' + (open ? 'Continue your project' : 'View your project') + '</a>' : '') +
+        (open && !BUILDER ? '<button class="btn btn-outline" type="button" data-edit>Edit runs, height or color</button>' : '') +
         '<a class="btn btn-outline" href="/visualizer" data-viz>See it on your fence</a>' +
       '</div>' +
-      '<h3 class="mp-sub">Photos</h3><p class="muted mp-photos">Uploads are coming soon. For now, reply to our email with a photo of each run.</p>' +
+      '<h3 class="mp-sub">Photos</h3><p class="muted mp-photos">' + (BUILDER ? 'Add a photo of each run as you measure it in your project.' : 'Uploads are coming soon. For now, reply to our email with a photo of each run.') + '</p>' +
       '<h3 class="mp-sub">Messages</h3>' +
       (msgs ? '<ul class="mp-msgs">' + msgs + '</ul>' : '<p class="muted">No messages yet. Ask us anything about measuring, extensions or colors.</p>') +
       '<form class="mp-send" novalidate><label class="sr-only" for="msg-' + esc(p.id) + '">Message</label><textarea id="msg-' + esc(p.id) + '" placeholder="Write a message"></textarea>' +
         '<p class="field-error" role="alert" hidden></p><button class="btn btn-outline" type="submit">Send message</button></form>' +
-      (open ? '<div class="mp-submit"><h3 class="mp-sub">Submit for review</h3><p>When your runs look right, submit your project. We check everything before anything is built, and you approve the final design. No payment now.</p>' +
+      (open && BUILDER ? '<div class="mp-submit"><h3 class="mp-sub">Next: measure each run</h3><p>Continue your project to walk each run post by post, add photos, and submit it for review. Your progress saves as you go.</p></div>' : '') +
+      (open && !BUILDER ? '<div class="mp-submit"><h3 class="mp-sub">Submit for review</h3><p>When your runs look right, submit your project. We check everything before anything is built, and you approve the final design. No payment now.</p>' +
         '<button class="btn btn-primary" type="button" data-submit>Submit for review</button></div>' : '') +
       '</article>';
   }

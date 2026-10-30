@@ -2,15 +2,20 @@ import { defineConfig } from 'astro/config';
 import fs from 'node:fs';
 import { features } from './src/data/site.ts';
 
-// With features.builder off, the Builder, account and staff pages are left out of dist/.
-const builderPages = ['account', 'projects', 'project', 'staff', 'staff-project', 'staff-rates'];
+// Pages left out of dist/ while their switch is off: the Builder with features.builder, and the
+// browser-only sign-in, My projects and staff pages with features.preview.
+const switched = [
+  { on: features.builder, pages: ['project'], js: ['builder.js', 'projects.js'] },
+  { on: features.preview, pages: ['account', 'projects', 'staff', 'staff-project', 'staff-rates'], js: ['account.js', 'staff.js'] },
+];
 const launchSwitch = {
   name: 'launch-switch',
   hooks: {
     'astro:build:done': ({ dir }) => {
-      if (features.builder) return;
-      for (const f of builderPages) fs.rmSync(new URL(f + '.html', dir), { force: true });
-      for (const f of ['account.js', 'builder.js', 'projects.js', 'staff.js']) fs.rmSync(new URL('js/' + f, dir), { force: true });
+      for (const s of switched.filter((x) => !x.on)) {
+        for (const f of s.pages) fs.rmSync(new URL(f + '.html', dir), { force: true });
+        for (const f of s.js) fs.rmSync(new URL('js/' + f, dir), { force: true });
+      }
     },
   },
 };

@@ -97,7 +97,7 @@ const ld = [org, site, crumbs, ...schema].filter(Boolean);
       </nav>
       <div class="header-actions">
         {features.builder && (
-        <a class="icon-btn" href="/projects" aria-label="My projects" data-account-link>
+        <a class="icon-btn" href={features.preview ? '/projects' : '/my-project'} aria-label="My projects" data-account-link>
           <Icon name="user" />
         </a>
         )}
@@ -113,7 +113,7 @@ const ld = [org, site, crumbs, ...schema].filter(Boolean);
     <nav id="mobile-nav" class="mobile-nav wrap" aria-label="Mobile" hidden>
       {nav.map((n) => <a href={n.href}>{n.label}</a>)}
       <a href="/support">Support</a>
-      {features.builder && <a href="/projects">My projects</a>}
+      {features.builder && <a href={features.preview ? '/projects' : '/my-project'}>My projects</a>}
       <a class="btn btn-primary btn-block" href="/shop">Order Now</a>
     </nav>
   </header>

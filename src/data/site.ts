@@ -20,9 +20,12 @@ export const brand = {
   phone: '(406) 306-0663',
 };
 
-// Launch switches. Greg, 2026-10-28: launch the site and Shop first. The Builder, My projects,
-// sign-in and staff pages stay off until they have a server, real accounts and a database.
-export const features = { builder: false };
+// Launch switches. Greg, 2026-10-28: launch the site and Shop first.
+// builder: the guided Builder (/project) on real accounts. Customers open it from their emailed link, and it
+//   loads from and saves to Supabase through functions/api/project. Greg, 2026-10-30: switched on.
+// preview: the browser-only stand-ins (any-6-digit sign-in, My projects, staff pages, demo projects).
+//   Keep this off on the live site: nothing in it reaches the team.
+export const features = { builder: true, preview: false };
 
 // Where Shop project requests and the contact form are sent: any endpoint that accepts a JSON POST
 // (Formspree, Basin, Getform or your own). Empty means not connected yet.

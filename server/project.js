@@ -1,6 +1,10 @@
-// Helpers shared by the signed-in project endpoints (messages, submit).
-import { db, sendEmail, dashboardLink, summary, money, fmtLen } from './lib.js';
+// Helpers shared by the signed-in project endpoints (project, messages, submit).
+import { db, sendEmail, dashboardLink, summary, money, fmtLen, estimate, COLOR_NAMES } from './lib.js';
 import { teamNotice } from './emails.js';
+import { heights } from '../src/data/site.ts';
+
+// States where the customer can still change their project. After they submit, it's locked until we reply.
+export const EDITABLE = ['estimate', 'in-progress', 'needs-fix'];
 
 // The project with its customer, only if this user owns it.
 export async function ownProject(env, id, userId) {
@@ -9,14 +13,43 @@ export async function ownProject(env, id, userId) {
   return r.ok && r.data && r.data[0] ? r.data[0] : null;
 }
 
-export function notify(env, kind, p, message) {
+// The Builder sends its whole project plus the runs, height and color it adds up to.
+// Returns { fields } to write to the projects row, or { error } with a message the customer can act on.
+// Photos are small thumbnails inside the project, so 1 MB leaves room for several per run.
+const MAX_BUILDER_BYTES = 1000000;
+export function cleanBuilder(b) {
+  if (!b || typeof b.builder !== 'object' || !b.builder || Array.isArray(b.builder)) return { error: 'Something went wrong. Reload the page and try again.' };
+  const doc = { ...b.builder };
+  delete doc.state; delete doc.messages; // the server owns the state and the message thread
+  const size = new TextEncoder().encode(JSON.stringify(doc)).length;
+  if (size > MAX_BUILDER_BYTES) return { error: 'Your project is too large to save. Remove a few photos and try again.' };
+  const runs = (Array.isArray(b.runs) ? b.runs : []).map((q) => Math.round(Number(q))).filter((q) => q > 0 && q <= 48 * 1000).slice(0, 50);
+  if (!runs.length) return { error: 'Your project needs at least one run.' };
+  const height = Math.round(Number(b.height));
+  if (!(height >= heights.min && height <= heights.max)) return { error: `Choose a height from ${heights.min} to ${heights.max} in.` };
+  const color = String(b.color || '');
+  if (!COLOR_NAMES[color]) return { error: 'Choose a color.' };
+  const name = String(doc.name || '').trim().slice(0, 120) || 'My project';
+  return { fields: { builder: doc, runs, height, color, name, estimate_cents: estimate(runs, height).cents } };
+}
+
+// Shipping address and open items from a submitted Builder project, as rows for the team email.
+export function builderRows(doc) {
+  if (!doc) return [];
+  const s = doc.shipping || {};
+  const ship = [s.name, s.street, [s.city, s.state].filter(Boolean).join(', ') + (s.zip ? ' ' + s.zip : '')].filter((x) => x && x.trim()).join(', ');
+  const open = (doc.openAtSubmit || []).map((x) => (x.level === 'needed' ? 'Needed: ' : 'Review: ') + x.label);
+  return [['Ship to', ship || '—'], ['Open items', open.length ? open.join('; ') : 'None']];
+}
+
+export function notify(env, kind, p, message, details) {
   const c = p.customers || {};
   return sendEmail(env, {
     to: env.TEAM_NOTIFY_EMAIL, replyTo: c.email,
     ...teamNotice({
       kind, message, first: c.first, last: c.last, email: c.email, mobile: c.mobile, marketing: c.marketing_opt_in,
       summary: summary(p), estimate: money(p.estimate_cents), runs: (p.runs || []).map(fmtLen), notes: p.notes,
-      extender: p.extender && p.extender.name, staffLink: dashboardLink(env, 'projects'),
+      extender: p.extender && p.extender.name, staffLink: dashboardLink(env, 'projects'), details,
     }),
   });
 }

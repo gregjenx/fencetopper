@@ -26,7 +26,7 @@ const offer = {
     <span class="eyebrow">Shop</span>
     <h1>Get your price.</h1>
     <p class="lead">Enter each straight run of fence, choose height and color, and see your estimate. <a class="link" href="/measure">How to measure</a></p>
-    {!features.builder && <p class="note" id="welcome-back" hidden></p>}
+    {!features.preview && <p class="note" id="welcome-back" hidden></p>}
   </section>
 
   <section class="section-tight">
@@ -78,7 +78,7 @@ const offer = {
   <dialog class="sheet" id="save-sheet" aria-labelledby="save-title">
     <div class="sheet-body" data-step="details">
       <h2 id="save-title">Save your project</h2>
-      {!features.builder && <Fragment>
+      {!features.preview && <Fragment>
         <p data-show="local">Your project stays in your hands. Save it now and come back to it anytime on this device. When you’re ready, we’ll help check your measurements. No payment now.</p>
         <p data-show="account" hidden>Your project stays in your hands. Save it now, then come back anytime to add photos, see it on your fence and fine-tune your runs. No payment now.</p>
       </Fragment>}
@@ -90,22 +90,22 @@ const offer = {
         </div>
         <div class="field"><label for="s-email">Email</label><input id="s-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required /></div>
         <div class="field"><label for="s-mobile">Mobile <span class="muted">(optional)</span></label><input id="s-mobile" type="tel" autocomplete="tel" inputmode="tel" /></div>
-        {features.builder && (<div class="field">
+        {features.preview && (<div class="field">
           <span class="label" id="lbl-via">Send my code by</span>
           <div class="choice-row two" role="radiogroup" aria-labelledby="lbl-via">
             <label class="choice"><input type="radio" name="via" value="email" checked /><span>Email</span></label>
             <label class="choice"><input type="radio" name="via" value="text" /><span>Text</span></label>
           </div>
         </div>)}
-        {!features.builder && <div class="field"><label for="s-notes">Anything we should know? <span class="muted">(optional)</span></label><textarea id="s-notes" placeholder="Your extensions, post sizes, a slope, a gate"></textarea></div>}
+        {!features.preview && <div class="field"><label for="s-notes">Anything we should know? <span class="muted">(optional)</span></label><textarea id="s-notes" placeholder="Your extensions, post sizes, a slope, a gate"></textarea></div>}
         <div class="hp" aria-hidden="true"><label for="s-company">Company</label><input id="s-company" type="text" tabindex="-1" autocomplete="off" /></div>
-        <label class="check" for="s-consent"><input id="s-consent" type="checkbox" /> <span>{features.builder ? 'Send me reminders about my project.' : 'Email me tips and offers.'}</span></label>
+        <label class="check" for="s-consent"><input id="s-consent" type="checkbox" /> <span>{features.preview ? 'Send me reminders about my project.' : 'Email me tips and offers.'}</span></label>
         <p class="field-error" id="details-error" role="alert" hidden></p>
-        <button class="btn btn-primary btn-block" type="submit">{features.builder ? 'Send my code' : 'Save my project'}</button>
+        <button class="btn btn-primary btn-block" type="submit">{features.preview ? 'Send my code' : 'Save my project'}</button>
         <button class="btn btn-outline btn-block" type="button" data-close-sheet>Keep editing</button>
       </form>
     </div>
-    {features.builder && (<Fragment>
+    {features.preview && (<Fragment>
     <div class="sheet-body" data-step="code" hidden>
       <h2>Enter your code</h2>
       <p>We sent a 6-digit code to <strong data-dest></strong>.</p>
@@ -126,7 +126,7 @@ const offer = {
       </form>
     </div>
     </Fragment>)}
-    {!features.builder && (
+    {!features.preview && (
     <div class="sheet-body" data-step="sent" hidden>
       <h2><span data-show="local account">You’re all set, <span data-first></span>.</span><span data-show="updated" hidden>Your changes are saved.</span></h2>
       <p data-show="local" data-sent-copy>Your project is saved on this device, and we have a copy so we can help when you’re ready.</p>
@@ -150,7 +150,7 @@ const offer = {
       <a class="btn btn-outline btn-block" href="/visualizer">See it on my fence</a>
     </div>
     )}
-    {features.builder && (
+    {features.preview && (
     <div class="sheet-body" data-step="saved" hidden>
       <h2>Your project is saved</h2>
       <p>Thanks, <span data-first></span>. Your runs, confirmations, height and color are saved to your project.</p>
@@ -173,7 +173,7 @@ const offer = {
     </div>
   </section>
   <Fragment slot="scripts">
-    {features.builder && <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>}
+    {features.preview && <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>}
     <script is:inline src={`/js/shop.js?v=${assetVersion}`} defer></script>
   </Fragment>
 </Base>

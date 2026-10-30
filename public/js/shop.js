@@ -268,7 +268,7 @@
   // Launch mode (no Builder yet). With the Phase 1 backend switched on (functions/api/projects.js has its
   // keys), saving creates the customer's project and emails them an "Open my project" link. Without it, or
   // if it fails, the request goes to the team through Formspree and the project stays on this device.
-  var BUILDER = !!(window.FT_FEATURES || {}).builder;
+  var BUILDER = !!(window.FT_FEATURES || {}).preview; // the browser-only code sign-in; real accounts save below
   var accountMode = false;
   function setMode(mode) {
     sheet.querySelectorAll('[data-show]').forEach(function (el) { el.hidden = el.dataset.show.split(' ').indexOf(mode) < 0; });

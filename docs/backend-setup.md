@@ -22,6 +22,7 @@ Cloudflare Pages runs everything in `functions/` automatically. No extra build s
 
 1. Sign up at supabase.com and create a project named `fencetopper`. Pick a US region. Save the database password somewhere safe.
 2. Go to **SQL Editor**, choose **New query**, paste all of `supabase/migrations/0001_phase1.sql`, and choose **Run**. It should finish with "Success. No rows returned".
+   Then do the same with `supabase/migrations/0002_builder.sql`, which adds the column the guided Builder saves to.
 3. Go to **Authentication**, then **URL Configuration**:
    - **Site URL:** `https://fencetopper.com`
    - **Redirect URLs:** add `https://fencetopper.com/my-project`, `https://www.fencetopper.com/my-project`, and `https://*.pages.dev/my-project` (for testing on the preview address).

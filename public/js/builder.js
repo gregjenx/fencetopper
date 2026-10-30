@@ -1,13 +1,16 @@
 /* Guided Builder (docs/05, reworked 2026-10-23 from Greg's brief).
    Three stages: 1 Your fence (project-wide answers and defaults), 2 Runs (walk each run left to right,
    posts and measurements, exceptions only), 3 Review and submit. Payment comes after approval.
-   PREVIEW ONLY: the project is read from and saved to this browser (see projects.js). */
+   Live: the customer opens it signed in from their emailed link, and the project loads from and saves to
+   functions/api/project; submit and messages go to functions/api/submit and messages.
+   With features.preview on, it runs on this browser's data instead (see projects.js). */
 (function () {
   'use strict';
   var FT = window.FT, P = FT && FT.projects;
   var root = document.getElementById('builder');
   if (!root || !P) return;
-  P.seedDemo();
+  var LIVE = !(window.FT_FEATURES || {}).preview;
+  if (!LIVE) P.seedDemo();
   document.body.classList.add('is-builder');
   var EXT = window.FT_EXTENDERS || [];
   var COLOR_NAMES = window.FT_COLOR_NAMES || {};
@@ -17,25 +20,48 @@
 
   // ---------- Load ----------
   function hashParam(k) { return decodeURIComponent((location.hash.match(new RegExp('[#&]' + k + '=([^&]+)')) || [])[1] || ''); }
-  var p = hashParam('p') ? P.get(hashParam('p')) : null;
-  if (!p) {
-    var mine = P.mine().sort(function (a, b) { return a.updatedAt < b.updatedAt ? 1 : -1; });
-    p = mine[0] || null;
+  function notFound(title, text) {
+    var signIn = LIVE ? FT.link('/my-project') : FT.link('/account');
+    root.innerHTML = '<section class="section-tight"><div class="panel empty-state"><h1>' + esc(title || 'We couldn’t find that project') + '</h1>' +
+      '<p class="muted">' + esc(text || 'Sign in to see your projects, or start a new one from your fence measurements.') + '</p>' +
+      '<div class="ext-cta"><a class="btn btn-primary" href="' + signIn + '">Sign in</a><a class="btn btn-outline" href="' + FT.link('/shop') + '">Start a new project</a></div></div></section>';
   }
-  if (!p) {
-    root.innerHTML = '<section class="section-tight"><div class="panel empty-state"><h1>We couldn’t find that project</h1>' +
-      '<p class="muted">Sign in to see your projects, or start a new one from your fence measurements.</p>' +
-      '<div class="ext-cta"><a class="btn btn-primary" href="' + FT.link('/account') + '">Sign in</a><a class="btn btn-outline" href="' + FT.link('/shop') + '">Start a new project</a></div></div></section>';
-    return;
+  function loadLocal() {
+    var lp = hashParam('p') ? P.get(hashParam('p')) : null;
+    if (!lp) lp = P.mine().sort(function (a, b) { return a.updatedAt < b.updatedAt ? 1 : -1; })[0] || null;
+    if (lp) start(lp); else notFound();
   }
-  var S = p.setup;
+  function loadLive() {
+    if (!FT.session.get()) { notFound('Sign in to open your project', 'Use the “Open my project” link in the email we sent when you saved it, or we’ll send you a new one.'); return; }
+    var id = hashParam('p');
+    FT.api('/api/project' + (id ? '?id=' + encodeURIComponent(id) : ''), { auth: true }).then(function (res) {
+      if (res.ok && res.data && res.data.project) { start(fromServer(res.data.project)); return; }
+      if (res.status === 401) { FT.session.clear(); notFound('Your sign-in expired', 'We’ll email you a new link to open your project.'); return; }
+      notFound();
+    }, function () { notFound('We couldn’t open your project', 'Check your connection and reload the page.'); });
+  }
+  // A saved Shop project has no Builder data yet; normalize() turns its runs into runs to walk.
+  function fromServer(row) {
+    var c = row.customer || {};
+    var b = row.builder || { runQin: row.runs, height: row.height, color: row.color, extender: row.extender, notes: row.notes, estimate: row.estimate_cents / 100, createdAt: row.created_at };
+    b.id = row.id; b.name = b.name || row.name; b.state = row.state;
+    b.first = c.first; b.last = c.last; b.email = c.email;
+    b.messages = (row.messages || []).map(function (m) { return { who: m.author === 'staff' ? 'FenceTopper' : 'You', text: m.body, at: m.created_at }; });
+    return P.normalize(b);
+  }
+
+  var p = null, S = null;
   var EDITABLE = ['estimate', 'in-progress', 'needs-fix'];
   function editable() { return EDITABLE.indexOf(p.state) >= 0; }
 
-  var tab = 'build';
-  var stage = hashParam('s') || (editable() ? 'project' : 'review');
-  if (stage === 'setup' || stage === 'runs') stage = 'project'; // older links
-  var runIdx = Math.min(p.runs.length - 1, Math.max(0, Number(hashParam('r')) || 0));
+  var tab = 'build', stage = 'project', runIdx = 0;
+  function start(proj) {
+    p = proj; S = p.setup;
+    stage = hashParam('s') || (editable() ? 'project' : 'review');
+    if (stage === 'setup' || stage === 'runs') stage = 'project'; // older links
+    runIdx = Math.min(p.runs.length - 1, Math.max(0, Number(hashParam('r')) || 0));
+    render();
+  }
   var editingQ = null, armedDelete = null, addingRun = false, openPost = {};
   var saveTimer = null, savedAt = null, rendering = false;
 
@@ -561,10 +587,38 @@
     clearTimeout(saveTimer);
     var ss = root.querySelector('[data-save-state]'); if (ss) ss.textContent = 'Saving…';
     saveTimer = setTimeout(function () {
-      P.save(p);
-      savedAt = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      var s2 = root.querySelector('[data-save-state]'); if (s2) s2.textContent = 'Saved ' + savedAt;
-    }, 400);
+      (LIVE ? saveLive() : Promise.resolve(P.save(p))).then(function (err) {
+        var s2 = root.querySelector('[data-save-state]');
+        if (typeof err === 'string') { if (s2) s2.textContent = err; return; }
+        savedAt = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        if (s2) s2.textContent = 'Saved ' + savedAt;
+      });
+    }, LIVE ? 800 : 400);
+  }
+  // What the server stores: the whole project, plus the runs, height and color it adds up to for the
+  // projects row. The server keeps the state and the messages itself.
+  function payload() {
+    p.updatedAt = new Date().toISOString();
+    var doc = Object.assign({}, p); delete doc.state; delete doc.messages;
+    return { project_id: p.id, builder: doc, runs: p.runs.map(function (r) { return P.runLength(p, r) || r.qin; }), height: p.height, color: p.color };
+  }
+  // Resolves to nothing when saved, or to a short message for the save indicator.
+  function saveLive() {
+    return FT.api('/api/project', { auth: true, body: payload() }).then(function (res) {
+      if (res.ok) return;
+      if (res.status === 409) { p.state = (res.data && res.data.state) || 'submitted'; render(); }
+      return (res.data && res.data.error) || 'Not saved. Check your connection.';
+    }, function () { return 'Not saved. Check your connection.'; });
+  }
+  // Messages go to the team in live mode; the preview keeps them on this device.
+  function sendMessage(text, run, done) {
+    var at = new Date().toISOString();
+    if (!LIVE) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
+    var about = run != null && p.runs[run] ? 'About ' + p.runs[run].name + ': ' : '';
+    FT.api('/api/messages', { auth: true, body: { project_id: p.id, body: about + text } }).then(function (res) {
+      if (res.ok) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
+      FT.toast((res.data && res.data.error) || 'We couldn’t send that. Try again.'); done(false);
+    }, function () { FT.toast('We couldn’t send that. Check your connection and try again.'); done(false); });
   }
   function rerender() { setTimeout(render, 0); }
   function refreshRunLive(i) {
@@ -706,16 +760,24 @@
     if (d.qSend) {
       var qi = +d.qSend, ta = root.querySelector('[data-q="' + qi + '"]');
       if (!ta.value.trim()) { ta.focus(); return; }
-      p.questions[qi].answered = true;
-      p.messages.push({ who: 'You', text: ta.value.trim(), at: new Date().toISOString(), run: p.questions[qi].run });
-      p.state = 'reply-received'; P.log(p, 'You', 'Answered a question'); P.save(p); render(); FT.toast('Reply sent'); return;
+      sendMessage(ta.value.trim(), p.questions[qi].run, function (ok) {
+        if (!ok) return;
+        p.questions[qi].answered = true;
+        if (!LIVE) p.state = 'reply-received';
+        P.log(p, 'You', 'Answered a question'); if (LIVE) persist(); else P.save(p); render(); FT.toast('Reply sent');
+      });
+      return;
     }
     if (b.hasAttribute('data-msg-send')) {
       var txt = root.querySelector('#msg-text'), runSel = root.querySelector('#msg-run');
       if (!txt.value.trim()) { txt.focus(); return; }
-      p.messages.push({ who: 'You', text: txt.value.trim(), at: new Date().toISOString(), run: runSel.value === '' ? null : +runSel.value });
-      p.messages.push({ who: 'FenceTopper assistant', text: 'Thanks. A member of our build team will reply here. You’ll get an email when they do.', at: new Date().toISOString(), source: 'General explanation' });
-      P.save(p); render(); return;
+      sendMessage(txt.value.trim(), runSel.value === '' ? null : +runSel.value, function (ok) {
+        if (!ok) return;
+        if (LIVE) { render(); FT.toast('Message sent. We’ll reply here and by email.'); return; }
+        p.messages.push({ who: 'FenceTopper assistant', text: 'Thanks. A member of our build team will reply here. You’ll get an email when they do.', at: new Date().toISOString(), source: 'General explanation' });
+        P.save(p); render();
+      });
+      return;
     }
     if (b.hasAttribute('data-approve')) {
       var box = root.querySelector('#terms');
@@ -739,8 +801,19 @@
     if (!document.getElementById('review-ok').checked) { err.textContent = 'Please confirm your measurements to submit.'; err.hidden = false; document.getElementById('review-ok').focus(); return; }
     var req = P.requirements(p);
     p.openAtSubmit = req.items.map(function (x) { return { level: x.level, label: x.label }; });
-    p.state = 'submitted'; P.recordEstimate(p, 'Submitted'); P.log(p, 'You', 'Submitted for review' + (req.needed ? ' with ' + plural(req.needed, 'open item') : ''));
-    P.save(p); tab = 'review'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); FT.toast('Submitted. We’ll review your project.');
+    P.recordEstimate(p, 'Submitted'); P.log(p, 'You', 'Submitted for review' + (req.needed ? ' with ' + plural(req.needed, 'open item') : ''));
+    function done() { p.state = 'submitted'; tab = 'review'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); FT.toast('Submitted. We’ll review your project.'); }
+    if (!LIVE) { p.state = 'submitted'; P.save(p); done(); return; }
+    var btn = root.querySelector('[data-submit]'); if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+    clearTimeout(saveTimer); // the submit carries the latest project
+    FT.api('/api/submit', { auth: true, body: payload() }).then(function (res) {
+      if (res.ok) { done(); return; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit for review'; }
+      err.textContent = (res.data && res.data.error) || 'We couldn’t submit that. Try again.'; err.hidden = false;
+    }, function () {
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit for review'; }
+      err.textContent = 'We couldn’t submit that. Check your connection and try again.'; err.hidden = false;
+    });
   }
   function thumb(file, cb) {
     var img = new Image(), url = URL.createObjectURL(file);
@@ -754,5 +827,5 @@
     img.src = url;
   }
 
-  render();
+  if (LIVE) loadLive(); else loadLocal();
 })();

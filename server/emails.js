@@ -80,7 +80,7 @@ ${button(link, 'Open my project')}
 }
 
 // To the team. A saved project isn't a hand-off: staff offer help, the customer drives.
-export function teamNotice({ kind = 'saved', first, last, email, mobile, summary, estimate, runs, notes, extender, marketing, staffLink, message }) {
+export function teamNotice({ kind = 'saved', first, last, email, mobile, summary, estimate, runs, notes, extender, marketing, staffLink, message, details }) {
   const heading = { saved: 'New project saved', updated: 'Project updated', submitted: 'Project submitted for review', message: 'New message' }[kind] || 'Project activity';
   const subject = `${heading}: ${first} ${last}, ${summary}`;
   const rows = [
@@ -92,6 +92,7 @@ export function teamNotice({ kind = 'saved', first, last, email, mobile, summary
     ['Extender', extender || '—'],
     ['Notes', notes || '—'],
     ['Tips and offers', marketing ? 'Yes' : 'No'],
+    ...(details || []), // Builder submissions add the shipping address and open items
   ];
   const note = kind === 'submitted'
     ? 'The customer has asked for review. Check the measurements and reply in the project.'

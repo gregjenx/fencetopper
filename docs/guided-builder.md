@@ -48,9 +48,15 @@ Questions come one at a time. Each answered question collapses into a summary wi
 - Uncertainty never stops progress, but it always appears on the open list.
 - Known solutions and review cases are tagged the same way everywhere: in setup, on runs, in review, and on the staff page.
 
-## Preview limits
+## Live and preview
 
-- Data is saved only in this browser.
-- Uploads become small thumbnails stored on the device.
+On the live site (`features.builder` on, `features.preview` off), customers open the Builder from **Continue your project** on `/my-project`, after signing in with their emailed link. The project loads from Supabase and autosaves to it through `functions/api/project`: the whole Builder project goes in the `builder` column, and the runs, height, color and estimate columns stay in step. Submitting sends the final project with it, locks editing, and emails the team the shipping address and open items. Messages go to the team through `functions/api/messages`.
+
+With `features.preview` on, the Builder runs on this browser's data instead, with demo projects, the any-6-digit sign-in and the staff pages. Keep it off on the live site.
+
+## Limits
+
+- Photos are small thumbnails stored inside the project (about 1 MB in all). Full-size uploads to the photo bucket come later.
+- Staff questions, final designs and approval have no staff tools yet. Reply to customers by email, or add a `staff` message in Supabase.
 - Corner posts that join two runs aren't linked between runs yet.
 - There's no slope or step handling yet.
