@@ -987,7 +987,7 @@ textarea { min-height: 96px; resize: vertical; }
 .viz-sample:focus-visible { outline: 3px solid var(--focus, var(--green)); outline-offset: 2px; }
 .viz-readout { font-weight: 700; color: var(--ink); font-size: 1rem; }
 .viz-pair .height-stepper .stepper { grid-template-columns: 42px minmax(0, 1fr) 42px; }
-.viz-compare { position: absolute; top: 10px; right: 10px; z-index: 2; padding: 7px 12px; border: 0; border-radius: 999px; background: rgb(22 32 47 / .78); color: #fff; font: 700 .85rem var(--font-body); cursor: pointer; backdrop-filter: blur(4px); }
+.viz-compare { position: absolute; right: 10px; bottom: 10px; z-index: 2; padding: 7px 12px; border: 0; border-radius: 999px; background: rgb(22 32 47 / .78); color: #fff; font: 700 .85rem var(--font-body); cursor: pointer; backdrop-filter: blur(4px); }
 .viz-compare[aria-pressed="true"] { background: #fff; color: #16202f; }
 .viz-compare:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .viz-actions { flex-wrap: nowrap; }
