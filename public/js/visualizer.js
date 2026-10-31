@@ -154,7 +154,7 @@
         ctx.beginPath(); ctx.arc(cx, d[2], r * .62, 0, Math.PI * 2);
         ctx.fillStyle = d[3]; ctx.fill(); ctx.lineWidth = r * .18; ctx.strokeStyle = '#1b1b1b'; ctx.stroke();
       });
-      ctx.font = '600 ' + Math.round(r * .9) + 'px Figtree, system-ui, sans-serif';
+      ctx.font = '600 ' + Math.round(r * 1.2) + 'px Figtree, system-ui, sans-serif';
       ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 4;
       var lx = x0 + r * 1.6;
       ctx.strokeText('Top of fence', lx, h.tl.y + r * 1.9); ctx.fillText('Top of fence', lx, h.tl.y + r * 1.9);
