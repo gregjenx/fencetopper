@@ -252,7 +252,10 @@
     img.onerror = function () { if (FT.toast) FT.toast('That sample didn’t load. Try again.'); };
     img.src = FT.link ? FT.link(s.src) : s.src;
   }
-  sampleBtns.forEach(function (b) { b.addEventListener('click', function () { useSample(b.dataset.sample); }); });
+  var samplesBox = document.getElementById('viz-samples'), samplesToggle = document.getElementById('viz-samples-toggle');
+  function showSamples(open) { samplesBox.hidden = !open; samplesToggle.setAttribute('aria-expanded', String(open)); }
+  samplesToggle.addEventListener('click', function () { showSamples(samplesBox.hidden); });
+  sampleBtns.forEach(function (b) { b.addEventListener('click', function () { useSample(b.dataset.sample); showSamples(false); }); });
   var drawnThumb = document.querySelector('[data-sample="drawn"] img');
   if (drawnThumb) { var tc = document.createElement('canvas'); tc.width = 240; tc.height = 150; tc.getContext('2d').drawImage(sampleYard(), 0, 0, 240, 150); drawnThumb.src = tc.toDataURL('image/png'); }
 
