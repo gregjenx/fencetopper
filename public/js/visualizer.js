@@ -172,7 +172,7 @@
     var el = document.getElementById('viz-readout');
     if (!el) return;
     var total = state.fenceFt * 12 + state.height, ft = Math.floor(total / 12), inch = total % 12;
-    el.textContent = state.fenceFt + ' ft fence + ' + state.height + ' in topper = ' + ft + ' ft' + (inch ? ' ' + inch + ' in' : '') + ' of privacy';
+    el.textContent = state.fenceFt + '\' fence height + ' + state.height + '" topper = ' + ft + '\'' + (inch ? inch + '"' : '') + ' of privacy'; // 6' fence height + 18" topper = 7'6" of privacy
   }
 
   // ---------- Dragging ----------
