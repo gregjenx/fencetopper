@@ -993,3 +993,6 @@ textarea { min-height: 96px; resize: vertical; }
 .viz-actions { flex-wrap: nowrap; }
 .viz-actions .btn { flex: 1 1 0; white-space: nowrap; }
 @media (max-width: 899px) { .viz-controls { padding: 16px; } }
+
+/* Highlighter for a key sentence. Dark ink is fixed, since --harvest-ink turns light in dark mode. */
+.hl { background: var(--harvest); color: #5a3b00; padding: 1px 4px; border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
