@@ -478,8 +478,9 @@
   }
   function reviewStage(req) {
     var s = p.shipping, ship = P.shippingDone(p);
-    var html = '<section class="stage-intro"><span class="eyebrow">Step 3 of 3</span><h2>Review and submit</h2><p class="muted">Check everything once. We review every project before we build, then send you a final design and price to approve.</p></section>' +
-      openItems(req) + projectSummary() + p.runs.map(runReview).join('');
+    var html = (editable() ? '<section class="stage-intro"><span class="eyebrow">Step 3 of 3</span><h2>Review and submit</h2><p class="muted">Check everything once. We review every project before we build, then send you a final design and price to approve.</p></section>'
+      : '<section class="stage-intro"><h2>What you sent us</h2><p class="muted">We review every project before we build, then send you a final design and price to approve.</p></section>') +
+      (editable() ? openItems(req) : '') + projectSummary() + p.runs.map(runReview).join('');
     if (!editable()) return html;
     html += '<section class="panel" id="shipping"><h3>Shipping address</h3><div class="ship-grid">' +
       textField('shipping.name', 'Full name', s.name, { auto: 'name' }) + textField('shipping.street', 'Street address', s.street, { auto: 'street-address' }) +
@@ -594,6 +595,7 @@
     var t = TABS.filter(function (x) { return x[0] === tab; })[0];
     if (!t[2]()) tab = 'build';
     if (stage === 'run' && !p.runs[runIdx]) stage = 'project';
+    if (!editable()) stage = 'review'; // a locked project only shows the read-only summary, never inputs that ignore taps
     var e = P.estimate(p), final = p.finalDesign && P.stateAtLeast(p, 'awaiting-approval');
     var main;
     if (tab === 'build') {
