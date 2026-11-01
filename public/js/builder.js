@@ -32,10 +32,11 @@
     if (lp) start(lp); else notFound();
   }
   function loadLive() {
-    if (!FT.session.get()) { notFound('Sign in to open your project', 'Use the “Open my project” link in the email we sent when you saved it, or we’ll send you a new one.'); return; }
     var id = hashParam('p');
+    if (!FT.session.get() && !FT.projectKeys.get(id)) { notFound('Sign in to open your project', 'Use the “Open my project” link in the email we sent when you saved it, or we’ll send you a new one.'); return; }
     FT.api('/api/project' + (id ? '?id=' + encodeURIComponent(id) : ''), { auth: true }).then(function (res) {
       if (res.ok && res.data && res.data.project) { start(fromServer(res.data.project)); return; }
+      if (res.status === 401 && !FT.session.get() && FT.projectKeys.get(id)) { FT.projectKeys.set(id, null); notFound('Open your project from our email', 'For your security, use the “Open my project” link we emailed you. If you can’t find it, we’ll send a new one.'); return; }
       if (res.status === 401) { FT.session.clear(); notFound('Your sign-in expired', 'We’ll email you a new link to open your project.'); return; }
       notFound();
     }, function () { notFound('We couldn’t open your project', 'Check your connection and reload the page.'); });
@@ -651,6 +652,7 @@
     return FT.api('/api/project', { auth: true, body: payload() }).then(function (res) {
       if (res.ok) return;
       if (res.status === 409) { p.state = (res.data && res.data.state) || 'submitted'; render(); }
+      if (res.status === 401) return 'Not saved. Open your project from the link we emailed you.';
       return (res.data && res.data.error) || 'Not saved. Check your connection.';
     }, function () { return 'Not saved. Check your connection.'; });
   }

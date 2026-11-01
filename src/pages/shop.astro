@@ -80,7 +80,7 @@ const offer = {
       <h2 id="save-title">Save your project</h2>
       {!features.preview && <Fragment>
         <p data-show="local">Your project stays in your hands. Save it now and come back to it anytime on this device. When you’re ready, we’ll help check your measurements. No payment now.</p>
-        <p data-show="account" hidden>Your project stays in your hands. Save it now, then come back anytime to add photos, see it on your fence and fine-tune your runs. No payment now.</p>
+        <p data-show="account" hidden>Your project stays in your hands. Save it now, then keep going: add your posts, measurements and photos at your own pace. No payment now.</p>
       </Fragment>}
       <p class="muted" data-build-summary></p>
       <form id="details-form" class="sheet-form" novalidate>
@@ -128,24 +128,26 @@ const offer = {
     </Fragment>)}
     {!features.preview && (
     <div class="sheet-body" data-step="sent" hidden>
-      <h2><span data-show="local account">You’re all set, <span data-first></span>.</span><span data-show="updated" hidden>Your changes are saved.</span></h2>
+      <h2><span data-show="local signed">You’re all set, <span data-first></span>.</span><span data-show="account" hidden>Check your email, <span data-first></span>.</span><span data-show="updated" hidden>Your changes are saved.</span></h2>
       <p data-show="local" data-sent-copy>Your project is saved on this device, and we have a copy so we can help when you’re ready.</p>
       <p class="note alert" data-not-sent hidden>Your project is saved on this device, but our copy didn’t reach us. Save it again later, or email it to <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a>.</p>
-      <p data-show="account" hidden><strong>Your project is saved.</strong> <span data-email-sent>We sent a link to <strong data-dest></strong>. Open it to confirm your email, and use it to pick up where you left off on any device.</span><span data-email-failed hidden>We couldn’t send your link just now. Use “Email me a link” on <a class="link" href="/my-project">your project page</a> to get one.</span></p>
+      <p data-show="signed" hidden><strong>Your project is saved.</strong> Next, walk through each run: your posts, measurements and photos. Everything saves as you go, and nothing is charged until you approve your final design.</p>
+      <p data-show="account" hidden><strong>Your project is saved.</strong> This email already has a FenceTopper account, so we added the project to it. <span data-email-sent>Open the link we sent to <strong data-dest></strong> to keep going.</span><span data-email-failed hidden>We couldn’t send your link just now. Use “Email me a link” on <a class="link" href="/my-project">your project page</a> to get one.</span></p>
       <p data-show="updated" hidden>Your project now has these runs, height and color. Open it to send us a message or submit it for review.</p>
       <p class="muted" data-build-summary></p>
-      <div data-show="local account">
+      <div data-show="local">
         <p style="margin-bottom:6px">Here’s what you can do next, whenever you’re ready:</p>
         <ol class="next-steps">
-          <li><strong>Add photos of each run.</strong> <span data-show="local">Email them to <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a> whenever you have them.</span><span data-show="account" hidden>For now, reply to our email with them.</span></li>
+          <li><strong>Add photos of each run.</strong> Email them to <a class="link" href={`mailto:${brand.email}`}>{brand.email}</a> whenever you have them.</li>
           <li><strong><a class="link" href="/visualizer">See it on your fence</a></strong> in the Visualizer.</li>
           <li><strong><a class="link" href="/measure">Check your measurements</a></strong> with the measuring guide.</li>
-          <li><strong>Submit for review.</strong> When it looks right, <span data-show="local"><a class="link" href="/contact">tell us you’re ready</a></span><span data-show="account" hidden>submit it from your project</span>. We check everything before anything is built, and you approve the final design.</li>
+          <li><strong>Submit for review.</strong> When it looks right, <a class="link" href="/contact">tell us you’re ready</a>. We check everything before anything is built, and you approve the final design.</li>
         </ol>
-        <p data-show="local">If we have a question, we’ll email <strong data-dest></strong>. Otherwise, the next step is yours.</p>
-        <p data-show="account" hidden class="muted">Questions? Reply to our email or message us from your project.</p>
+        <p>If we have a question, we’ll email <strong data-dest></strong>. Otherwise, the next step is yours.</p>
       </div>
-      <button class="btn btn-primary btn-block" type="button" data-open-saved data-show="local account">Open my project</button>
+      <p class="muted" data-show="signed" hidden><span data-email-sent>We also emailed a link to <strong data-dest></strong>, so you can pick up on any device.</span></p>
+      <a class="btn btn-primary btn-block" href="/project" data-continue data-show="signed" hidden>Continue my project</a>
+      <button class="btn btn-primary btn-block" type="button" data-open-saved data-show="local">Back to my estimate</button>
       <a class="btn btn-primary btn-block" href="/my-project" data-show="updated" hidden>Open my project</a>
       <a class="btn btn-outline btn-block" href="/visualizer">See it on my fence</a>
     </div>

@@ -1,15 +1,14 @@
 // POST /api/submit { project_id, builder?, runs?, height?, color? }: the customer submits their project for review.
 // Only now does the team step in. The Builder sends its final project with the submit, so nothing is lost
 // between the last autosave and the tap.
-import { configured, json, readJson, db, userFromRequest } from '../../server/lib.js';
-import { ownProject, notify, cleanBuilder, builderRows, EDITABLE } from '../../server/project.js';
+import { configured, json, readJson, db } from '../../server/lib.js';
+import { projectAccess, notify, cleanBuilder, builderRows, EDITABLE } from '../../server/project.js';
 
 export async function onRequestPost({ request, env }) {
   if (!configured(env)) return json({ configured: false }, 503);
-  const user = await userFromRequest(env, request);
-  if (!user) return json({ configured: true, error: 'signed-out' }, 401);
   const b = (await readJson(request)) || {};
-  const p = await ownProject(env, b.project_id, user.id);
+  const { p, status } = await projectAccess(env, request, b.project_id);
+  if (status === 401) return json({ configured: true, error: 'signed-out' }, 401);
   if (!p) return json({ configured: true, error: 'Project not found.' }, 404);
   if (!EDITABLE.includes(p.state)) return json({ configured: true, submitted: true, state: p.state });
   let fields = {};

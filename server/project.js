@@ -1,5 +1,5 @@
 // Helpers shared by the signed-in project endpoints (project, messages, submit).
-import { db, sendEmail, dashboardLink, summary, money, fmtLen, estimate, COLOR_NAMES } from './lib.js';
+import { db, sendEmail, dashboardLink, summary, money, fmtLen, estimate, COLOR_NAMES, userFromRequest, hashKey } from './lib.js';
 import { teamNotice } from './emails.js';
 import { heights } from '../src/data/site.ts';
 
@@ -11,6 +11,24 @@ export async function ownProject(env, id, userId) {
   if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) return null;
   const r = await db(env, `projects?id=eq.${id}&customer_id=eq.${userId}&select=*,customers(first,last,email,mobile,marketing_opt_in)`);
   return r.ok && r.data && r.data[0] ? r.data[0] : null;
+}
+
+// Who may use this project: the signed-in owner, or a browser holding the project key Shop handed out to a
+// brand-new customer. Returns { p, userId } or { status } (401 signed out, 404 not theirs).
+// A key opens only its own project, and stops working once the email is confirmed (the owner then has their
+// own sign-in) or after it expires, so someone who typed another person's email never sees that person's data.
+export async function projectAccess(env, request, id) {
+  const user = await userFromRequest(env, request);
+  if (user) {
+    const p = await ownProject(env, id, user.id);
+    return p ? { p, userId: user.id } : { status: 404 };
+  }
+  const key = request.headers.get('X-Project-Key');
+  if (!key || typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) return { status: 401 };
+  const r = await db(env, `projects?id=eq.${id}&guest_key_hash=eq.${await hashKey(key)}&select=*,customers(first,last,email,mobile,marketing_opt_in,email_confirmed_at)`);
+  const p = r.ok && r.data && r.data[0];
+  if (!p || !p.guest_key_expires_at || Date.parse(p.guest_key_expires_at) < Date.now() || (p.customers && p.customers.email_confirmed_at)) return { status: 401 };
+  return { p, userId: p.customer_id };
 }
 
 // The Builder sends its whole project plus the runs, height and color it adds up to.

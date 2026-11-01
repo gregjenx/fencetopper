@@ -89,11 +89,19 @@
     set: function (s) { store.set('session', s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: Date.now() + (Number(s.expires_in) || 3600) * 1000 } : null); },
     clear: function () { store.set('session', null); store.set('editing', null); },
   };
+  // Project keys: a brand-new customer's key to the one project they just saved (see functions/api/projects.js).
+  var projectKeys = {
+    get: function (id) { return id ? (store.get('projectKeys', {}) || {})[id] || null : null; },
+    set: function (id, key) { var all = store.get('projectKeys', {}) || {}; if (key) all[id] = key; else delete all[id]; store.set('projectKeys', all); },
+  };
   function api(path, opts) {
     opts = opts || {};
+    var pid = (opts.body && opts.body.project_id) || decodeURIComponent((path.match(/[?&]id=([^&]+)/) || [])[1] || '');
+    var pkey = projectKeys.get(pid);
     function go(token) {
       var h = { 'Content-Type': 'application/json', Accept: 'application/json' };
       if (token) h.Authorization = 'Bearer ' + token;
+      else if (pkey) h['X-Project-Key'] = pkey;
       return fetch(path, { method: opts.method || (opts.body ? 'POST' : 'GET'), headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined })
         .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { status: r.status, ok: r.ok, data: j }; }); });
     }
@@ -110,7 +118,7 @@
     });
   }
 
-  window.FT = { link: link, store: store, quote: quote, clampHeight: clampHeight, heightHint: heightHint, heightStepper: heightStepper, money: money, fmtLen: fmtLen, cart: cart, setCart: setCart, toast: toast, PRICING: PRICING, session: session, api: api };
+  window.FT = { link: link, store: store, quote: quote, clampHeight: clampHeight, heightHint: heightHint, heightStepper: heightStepper, money: money, fmtLen: fmtLen, cart: cart, setCart: setCart, toast: toast, PRICING: PRICING, session: session, projectKeys: projectKeys, api: api };
 
   // ---------- Mobile menu ----------
   var toggle = document.querySelector('[data-menu-toggle]');

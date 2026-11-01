@@ -1,9 +1,9 @@
 // POST /api/projects: save a project from Shop.
 // New customer or signed-out save: create the customer and project, email an "Open my project" link,
-// and tell the team. Signed-in save with project_id (editing from /my-project): update that project.
+// and tell the team. A brand-new customer also gets a key to just this project so they can keep going. Signed-in save with project_id (editing from /my-project): update that project.
 // Without the keys it answers { configured: false } and Shop sends the request through Formspree instead.
 import {
-  configured, json, readJson, db, magicLink, userFromRequest, sendEmail, dashboardLink,
+  configured, json, readJson, db, magicLink, newProjectKey, hashKey, userFromRequest, sendEmail, dashboardLink,
   cleanProject, estimate, ratesUsed, money, fmtLen, summary,
 } from '../../server/lib.js';
 import { confirmationEmail, teamNotice } from '../../server/emails.js';
@@ -12,6 +12,8 @@ import { confirmationEmail, teamNotice } from '../../server/emails.js';
 export function onRequestGet({ env }) {
   return json({ configured: !!configured(env) });
 }
+
+const KEY_DAYS = 30;
 
 export async function onRequestPost({ request, env }) {
   if (!configured(env)) return json({ configured: false }, 503);
@@ -48,6 +50,12 @@ export async function onRequestPost({ request, env }) {
 
     const redirect = `${new URL(request.url).origin}/my-project`;
     const auth = await magicLink(env, p.email, redirect, { first: p.first, last: p.last });
+    // A brand-new email gets a key to this one project so they can go straight on to the Builder. An email
+    // that already had an account gets none: they open it from the emailed link, which proves the email is theirs.
+    const projectKey = auth.isNew ? newProjectKey() : null;
+    // Someone is saving under an email that already has an account. Cancel every project key on it, so a key
+    // handed out when the account was first made (perhaps by someone who typed this email) stops working.
+    if (!auth.isNew) await db(env, `projects?customer_id=eq.${auth.userId}&guest_key_hash=not.is.null`, { method: 'PATCH', prefer: 'return=minimal', body: { guest_key_hash: null, guest_key_expires_at: null } });
 
     const cust = await db(env, 'customers?on_conflict=id', {
       method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
@@ -57,7 +65,10 @@ export async function onRequestPost({ request, env }) {
 
     const proj = await db(env, 'projects?select=id', {
       method: 'POST', prefer: 'return=representation',
-      body: { customer_id: auth.userId, name: `${p.last} fence`, state: 'in-progress', ...fields },
+      body: {
+        customer_id: auth.userId, name: `${p.last} fence`, state: 'in-progress', ...fields,
+        ...(projectKey ? { guest_key_hash: await hashKey(projectKey), guest_key_expires_at: new Date(Date.now() + KEY_DAYS * 864e5).toISOString() } : {}),
+      },
     });
     if (!proj.ok || !proj.data || !proj.data[0]) throw new Error(`project ${proj.status}`);
     const projectId = proj.data[0].id;
@@ -66,7 +77,7 @@ export async function onRequestPost({ request, env }) {
       sendEmail(env, { to: p.email, ...confirmationEmail({ first: p.first, summary: label, estimate: money(est.cents), link: auth.link }) }),
       sendEmail(env, { to: env.TEAM_NOTIFY_EMAIL, replyTo: p.email, ...teamNotice({ kind: 'saved', ...team }) }),
     ]);
-    return json({ configured: true, saved: true, projectId, emailSent });
+    return json({ configured: true, saved: true, projectId, emailSent, projectKey, returning: !auth.isNew });
   } catch (e) {
     console.error('save project failed', e && e.message);
     // configured but failing: Shop falls back to Formspree so the request still reaches the team.

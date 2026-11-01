@@ -23,6 +23,7 @@ Cloudflare Pages runs everything in `functions/` automatically. No extra build s
 1. Sign up at supabase.com and create a project named `fencetopper`. Pick a US region. Save the database password somewhere safe.
 2. Go to **SQL Editor**, choose **New query**, paste all of `supabase/migrations/0001_phase1.sql`, and choose **Run**. It should finish with "Success. No rows returned".
    Then do the same with `supabase/migrations/0002_builder.sql`, which adds the column the guided Builder saves to.
+   Then `supabase/migrations/0003_project_keys.sql`, which lets a new customer go straight on to the Builder after saving.
 3. Go to **Authentication**, then **URL Configuration**:
    - **Site URL:** `https://fencetopper.com`
    - **Redirect URLs:** add `https://fencetopper.com/my-project`, `https://www.fencetopper.com/my-project`, and `https://*.pages.dev/my-project` (for testing on the preview address).
@@ -70,7 +71,7 @@ Never put these keys in the code or in GitHub.
 
 On your `*.pages.dev` address:
 
-1. In Shop, enter a run, choose **Build my Topper**, and save with your own email. The saved screen should say "We sent a link to …".
+1. In Shop, enter a run, choose **Build my Topper**, and save with an email that has never saved a project. The saved screen should say "You’re all set" with a **Continue my project** button that opens the Builder straight away. That browser holds a key to that one project only. Saving again with the same email says "Check your email" instead, and cancels the earlier key, because only the emailed link can open an existing account.
 2. You should get two emails: "Your FenceTopper project is saved" and "New project saved: …".
 3. Open the first one and choose **Open my project**. You should land on "Hi, {your name}." with your project.
 4. Send a message, then submit for review. You should get a team email for each.

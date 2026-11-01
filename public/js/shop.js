@@ -291,8 +291,10 @@
       fill(); setMode(mode);
       sheet.querySelector('[data-not-sent]').hidden = mode !== 'local' || info.sent;
       sheet.querySelector('[data-sent-copy]').hidden = mode !== 'local' || !info.sent;
-      sheet.querySelector('[data-email-sent]').hidden = !info.emailSent;
+      sheet.querySelectorAll('[data-email-sent]').forEach(function (el) { el.hidden = !info.emailSent; });
       sheet.querySelector('[data-email-failed]').hidden = !!info.emailSent;
+      var cont = sheet.querySelector('[data-continue]');
+      if (cont && info.projectId) cont.href = FT.link('/project') + '#p=' + encodeURIComponent(info.projectId);
       project.state = mode === 'local' ? (info.sent ? 'sent' : 'not-sent') : 'saved';
       project.serverId = info.projectId || null; project.mode = mode;
       if (mode !== 'updated') { var projects = FT.store.get('projects', []) || []; projects.push(project); FT.store.set('projects', projects); }
@@ -327,7 +329,10 @@
       project_id: editing ? editing.projectId : undefined, company: v('s-company'),
     } }).then(function (res) {
       var j = res.data || {};
-      if (res.ok && j.saved) finish(j.updated ? 'updated' : 'account', j);
+      // A new customer gets a key to this project, so they go straight on to the Builder. A returning email
+      // (already has an account) opens the project from the emailed link instead.
+      if (res.ok && j.saved && j.projectKey) FT.projectKeys.set(j.projectId, j.projectKey);
+      if (res.ok && j.saved) finish(j.updated ? 'updated' : j.projectKey ? 'signed' : 'account', j);
       else if (res.status === 400 && j.error) fail(j.error);
       else viaFormspree();
     }, viaFormspree);
@@ -438,9 +443,11 @@
     wb.innerHTML = 'You’re editing <strong>' + esc(wbEditing.name) + '</strong>. Change your runs, height or color, then save to update it. <a class="link" href="/my-project">Back to my project</a>';
     wb.hidden = false;
   } else if (wb && wbContact.first && draft && wbSaved.length) {
-    var hasAccount = wbSaved.some(function (p) { return p.mode === 'account'; });
+    var hasAccount = wbSaved.some(function (p) { return p.mode === 'account' || p.mode === 'signed'; });
+    var lastLive = wbSaved.filter(function (p) { return p.serverId; }).pop();
     wb.innerHTML = 'Welcome back, ' + esc(wbContact.first) + '. Your saved project is loaded below. Change anything you like, then save it again.' +
-      (hasAccount ? ' <a class="link" href="/my-project">Open my project</a> to use it on any device.' : '');
+      (lastLive && (FT.session.get() || FT.projectKeys.get(lastLive.serverId)) ? ' <a class="link" href="' + FT.link('/project') + '#p=' + encodeURIComponent(lastLive.serverId) + '">Continue my project</a>'
+        : hasAccount ? ' <a class="link" href="/my-project">Open my project</a> to use it on any device.' : '');
     wb.hidden = false;
   }
   sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });

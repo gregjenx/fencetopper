@@ -30,14 +30,14 @@ function button(href, label) {
 export function confirmationEmail({ first, summary, estimate, link }) {
   const subject = `Your ${brand.name} project is saved`;
   const preview = `${summary}. Estimate ${estimate}. Pick up where you left off.`;
-  const steps = ['Add photos of each run', 'See it on your fence in the Visualizer', 'Fine-tune your runs and height', 'Submit for review when you’re ready'];
+  const steps = ['Add your posts and measurements for each run', 'Add photos of each run', 'See it on your fence in the Visualizer', 'Submit for review when you’re ready'];
   const html = layout({
     preview,
     body: `<p style="margin:0 0 14px;">Hi ${esc(first)},</p>
 <p style="margin:0 0 6px;">Your project is saved. Here’s what you have so far:</p>
 <p style="margin:0;font-weight:700;">${esc(summary)} · Estimate ${esc(estimate)}</p>
 ${button(link, 'Open my project')}
-<p style="margin:0 0 6px;">Opening it confirms your email. Then you can, at your own pace:</p>
+<p style="margin:0 0 6px;">Use it to pick up where you left off, on any device. At your own pace, you can:</p>
 <ul style="margin:0 0 14px;padding-left:20px;">${steps.map((s) => `<li style="margin:0 0 4px;">${s}</li>`).join('')}</ul>
 <p style="margin:0 0 14px;">Nothing is built or charged until you approve your final design.</p>
 <p style="margin:0 0 14px;">Questions? Just reply. A real person reads every email.</p>
@@ -51,7 +51,7 @@ ${summary} · Estimate ${estimate}
 
 Open my project: ${link}
 
-Opening it confirms your email. Then you can, at your own pace:
+Use it to pick up where you left off, on any device. At your own pace, you can:
 ${steps.map((s) => `- ${s.replace('’', "'")}`).join('\n')}
 
 Nothing is built or charged until you approve your final design.

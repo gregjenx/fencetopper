@@ -55,6 +55,7 @@ function authAdmin(env, path, body) {
 
 // Creates the Auth user if needed (unconfirmed), then makes a one-time sign-in link that lands on
 // /my-project. Opening the link confirms the email and signs the customer in.
+// isNew is true when this email had no account before, which is when Shop may hand out a project key.
 export async function magicLink(env, email, redirectTo, meta) {
   const created = await authAdmin(env, 'users', { email, email_confirm: false, user_metadata: meta || {} });
   if (!created.ok && created.status !== 422 && created.status !== 400) throw new Error(`auth create ${created.status}`);
@@ -64,7 +65,18 @@ export async function magicLink(env, email, redirectTo, meta) {
   const link = d.action_link || (d.properties && d.properties.action_link);
   const user = d.user || d;
   if (!link || !user.id) throw new Error('auth link missing');
-  return { link, userId: user.id, emailConfirmedAt: user.email_confirmed_at || null };
+  return { link, userId: user.id, emailConfirmedAt: user.email_confirmed_at || null, isNew: created.ok };
+}
+
+// Project keys let a brand-new customer keep working in the Builder before they open the emailed link.
+// A key opens one project only, never the account, and only the SHA-256 of it is stored.
+export function newProjectKey() {
+  const b = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+export async function hashKey(key) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(key)));
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
 // Checks a customer's access token and returns their Auth user, or null.
