@@ -254,6 +254,14 @@
       label: describe(r.cfg, r.q),
       first: prior.first || '', last: prior.last || '', email: prior.email || '', mobile: prior.mobile || '', via: 'email',
     };
+    // Saved projects switched on: go straight to the project page, which asks them to save it there.
+    // Editing a project they already saved (from /my-project) still updates it from the sheet here.
+    if (accountMode && (window.FT_FEATURES || {}).builder && !FT.store.get('editing', null)) {
+      FT.store.set('buildDraft', { at: new Date().toISOString(), runQin: project.runQin, height: project.height, color: project.color, extender: project.extender, estimate: project.estimate });
+      FT.store.set('draftProject', null);
+      location.href = FT.link('/project') + '#p=new';
+      return;
+    }
     document.getElementById('s-first').value = project.first;
     document.getElementById('s-last').value = project.last;
     document.getElementById('s-email').value = project.email;
@@ -439,7 +447,11 @@
   var wb = document.getElementById('welcome-back'), wbContact = FT.store.get('contact', {}) || {};
   var wbEditing = FT.store.get('editing', null), wbSaved = FT.store.get('projects', []) || [];
   function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; }
-  if (wb && wbEditing && FT.session.get()) {
+  var wbDraft = FT.store.get('draftProject', null);
+  if (wb && wbDraft && !wbEditing) {
+    wb.innerHTML = 'You have a project you haven’t saved yet. <a class="link" href="' + FT.link('/project') + '#p=new">Continue my project</a>';
+    wb.hidden = false;
+  } else if (wb && wbEditing && FT.session.get()) {
     wb.innerHTML = 'You’re editing <strong>' + esc(wbEditing.name) + '</strong>. Change your runs, height or color, then save to update it. <a class="link" href="/my-project">Back to my project</a>';
     wb.hidden = false;
   } else if (wb && wbContact.first && draft && wbSaved.length) {

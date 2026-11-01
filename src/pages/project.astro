@@ -8,6 +8,33 @@ const colorNames = Object.fromEntries(colors.map((c) => [c.id, c.name]));
   <div class="wrap builder" id="builder">
     <p class="builder-loading">Loading your project…</p>
   </div>
+
+  <!-- Arriving from Build my Topper: the project is on this device until they save it here. -->
+  <dialog class="sheet" id="save-sheet" aria-labelledby="ps-title">
+    <div class="sheet-body" data-step="save">
+      <h2 id="ps-title">Save your project to keep going</h2>
+      <p>Here’s your project. Save it, then add your posts, measurements and photos at your own pace. No payment now.</p>
+      <p class="muted" data-ps-summary></p>
+      <form id="ps-form" class="sheet-form" novalidate>
+        <div class="name-row">
+          <div class="field"><label for="ps-first">First name</label><input id="ps-first" type="text" autocomplete="given-name" required /></div>
+          <div class="field"><label for="ps-last">Last name</label><input id="ps-last" type="text" autocomplete="family-name" required /></div>
+        </div>
+        <div class="field"><label for="ps-email">Email</label><input id="ps-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required /></div>
+        <div class="field"><label for="ps-mobile">Mobile <span class="muted">(optional)</span></label><input id="ps-mobile" type="tel" autocomplete="tel" inputmode="tel" /></div>
+        <div class="hp" aria-hidden="true"><label for="ps-company">Company</label><input id="ps-company" type="text" tabindex="-1" autocomplete="off" /></div>
+        <label class="check" for="ps-consent"><input id="ps-consent" type="checkbox" /> <span>Email me tips and offers.</span></label>
+        <p class="field-error" id="ps-error" role="alert" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit">Save and continue</button>
+        <button class="btn btn-outline btn-block" type="button" data-ps-later>Look around first</button>
+      </form>
+    </div>
+    <div class="sheet-body" data-step="check" hidden>
+      <h2>Check your email, <span data-ps-first></span></h2>
+      <p><strong>Your project is saved.</strong> This email already has a FenceTopper account, so we added the project to it. <span data-ps-sent>Open the link we sent to <strong data-ps-email></strong> to keep going. Anything you add on this device before then comes with you when you open it here.</span><span data-ps-failed hidden>We couldn’t send your link just now. Use “Email me a link” on <a class="link" href="/my-project">your project page</a> to get one.</span></p>
+      <button class="btn btn-outline btn-block" type="button" data-ps-close>OK</button>
+    </div>
+  </dialog>
   <Fragment slot="scripts">
     <script is:inline define:vars={{ ext, colorNames, heightList }}>window.FT_EXTENDERS = ext; window.FT_COLOR_NAMES = colorNames; window.FT_HEIGHTS = heightList;</script>
     <script is:inline src={`/js/projects.js?v=${assetVersion}`} defer></script>

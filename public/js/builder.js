@@ -35,12 +35,99 @@
     var id = hashParam('p');
     if (!FT.session.get() && !FT.projectKeys.get(id)) { notFound('Sign in to open your project', 'Use the “Open my project” link in the email we sent when you saved it, or we’ll send you a new one.'); return; }
     FT.api('/api/project' + (id ? '?id=' + encodeURIComponent(id) : ''), { auth: true }).then(function (res) {
-      if (res.ok && res.data && res.data.project) { start(fromServer(res.data.project)); return; }
+      if (res.ok && res.data && res.data.project) { start(adoptDraft(fromServer(res.data.project), res.data.project)); return; }
       if (res.status === 401 && !FT.session.get() && FT.projectKeys.get(id)) { FT.projectKeys.set(id, null); notFound('Open your project from our email', 'For your security, use the “Open my project” link we emailed you. If you can’t find it, we’ll send a new one.'); return; }
       if (res.status === 401) { FT.session.clear(); notFound('Your sign-in expired', 'We’ll email you a new link to open your project.'); return; }
       notFound();
     }, function () { notFound('We couldn’t open your project', 'Check your connection and reload the page.'); });
   }
+  // A returning customer saved from the panel, then opened the emailed link on this device: bring along what
+  // they added before signing in, as long as the project hasn't been worked on anywhere else yet.
+  function adoptDraft(proj, row) {
+    var kept = FT.store.get('draftProject', null);
+    if (!kept || kept.serverId !== row.id || row.builder) return proj;
+    var merged = P.normalize(Object.assign({}, kept, { id: row.id, state: row.state, name: proj.name, first: proj.first, last: proj.last, email: proj.email, messages: proj.messages }));
+    delete merged.serverId; delete merged.draftAt;
+    // Save straight away, and forget the device copy only once the server has it.
+    setTimeout(function () { saveLive().then(function (err) { if (!err) { FT.store.set('draftProject', null); FT.store.set('buildDraft', null); } }); }, 0);
+    return merged;
+  }
+
+  // ---------- Draft: arrived from Build my Topper, not saved yet ----------
+  // Shop hands over the estimate in buildDraft. The project lives on this device (draftProject) until the
+  // customer saves it in the panel. A new email then carries on right here with a project key; an email that
+  // already has an account opens the emailed link, and adoptDraft() brings this work along.
+  var DRAFT = false, saveAsks = 0, sheet = document.getElementById('save-sheet');
+  function startDraft() {
+    var d = FT.store.get('buildDraft', null), kept = FT.store.get('draftProject', null);
+    if (!d && !kept) { notFound('Start with your estimate', 'Enter your fence runs in Shop, then choose Build my Topper.'); return; }
+    DRAFT = true;
+    start(kept && (!d || kept.draftAt === d.at) ? P.normalize(kept) : P.normalize({
+      id: 'new', name: 'My fence', state: 'in-progress', runQin: d.runQin, height: d.height, color: d.color,
+      extender: d.extender, estimate: d.estimate, draftAt: d.at,
+    }));
+    if (!(kept && kept.serverId)) askSave();
+  }
+  function sheetStep(name) { sheet.querySelectorAll('[data-step]').forEach(function (x) { x.hidden = x.dataset.step !== name; }); }
+  function askSave() {
+    if (!sheet || sheet.open) return;
+    saveAsks++;
+    var c = FT.store.get('contact', {}) || {};
+    ['first', 'last', 'email', 'mobile'].forEach(function (k) { var el = document.getElementById('ps-' + k); if (!el.value) el.value = c[k] || ''; });
+    sheet.querySelector('[data-ps-summary]').textContent = summaryLine();
+    document.getElementById('ps-error').hidden = true;
+    sheetStep('save');
+    if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
+    setTimeout(function () { var f = document.getElementById(c.first ? 'ps-email' : 'ps-first'); if (f) f.focus(); }, 50);
+  }
+  function closeSheet() { if (typeof sheet.close === 'function') sheet.close(); else sheet.removeAttribute('open'); }
+  function summaryLine() {
+    var total = p.runs.reduce(function (t, r) { return t + (P.runLength(p, r) || r.qin || 0); }, 0);
+    return fmtQin(total) + ' across ' + plural(p.runs.length, 'run') + ' · ' + p.height + ' in · ' + (COLOR_NAMES[p.color] || p.color) + ' · estimate ' + FT.money(P.estimate(p).total);
+  }
+  if (sheet) {
+    sheet.querySelector('[data-ps-later]').addEventListener('click', closeSheet);
+    sheet.querySelector('[data-ps-close]').addEventListener('click', closeSheet);
+    sheet.addEventListener('click', function (e) { if (e.target === sheet && !sheet.querySelector('[data-step="save"]').hidden) closeSheet(); });
+    document.getElementById('ps-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = function (k) { return document.getElementById('ps-' + k).value.trim(); };
+      var err = document.getElementById('ps-error'), btn = e.target.querySelector('button[type=submit]');
+      var c = { first: v('first'), last: v('last'), email: v('email'), mobile: v('mobile') };
+      var bad = !c.first ? 'first' : !c.last ? 'last' : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email) ? 'email' : null;
+      if (bad) { err.textContent = bad === 'email' ? 'Enter your email so we can send you a link to your project.' : 'Enter your first and last name.'; err.hidden = false; document.getElementById('ps-' + bad).focus(); return; }
+      FT.store.set('contact', c);
+      btn.disabled = true; btn.textContent = 'Saving…'; err.hidden = true;
+      var d = FT.store.get('buildDraft', null) || {}, ext = d.extender;
+      FT.api('/api/projects', { body: {
+        first: c.first, last: c.last, email: c.email, mobile: c.mobile, notes: '', marketing: document.getElementById('ps-consent').checked,
+        runs: payload().runs, height: p.height, color: p.color, extender: ext ? { id: ext.id, name: ext.name } : null, company: v('company'),
+      } }).then(function (res) {
+        btn.disabled = false; btn.textContent = 'Save and continue';
+        var j = res.data || {};
+        if (!(res.ok && j.saved && j.projectId)) { err.textContent = j.error || 'We couldn’t save that. Check your connection and try again.'; err.hidden = false; return; }
+        var saved = FT.store.get('projects', []) || [];
+        saved.push({ serverId: j.projectId, mode: j.projectKey ? 'signed' : 'account', label: summaryLine(), first: c.first, at: new Date().toISOString() });
+        FT.store.set('projects', saved);
+        if (j.projectKey) {
+          FT.projectKeys.set(j.projectId, j.projectKey);
+          DRAFT = false; FT.store.set('draftProject', null); FT.store.set('buildDraft', null);
+          p.id = j.projectId; p.first = c.first; p.last = c.last; p.email = c.email; delete p.draftAt; if (p.name === 'My fence') p.name = c.last + ' fence';
+          history.replaceState(null, '', '#p=' + encodeURIComponent(p.id) + '&s=' + stage + (stage === 'run' ? '&r=' + runIdx : ''));
+          closeSheet(); render(); persist(); // sends anything answered before saving
+          FT.toast('Saved. Keep going whenever you like.');
+          return;
+        }
+        p.serverId = j.projectId; FT.store.set('draftProject', p);
+        sheet.querySelector('[data-ps-first]').textContent = c.first;
+        sheet.querySelector('[data-ps-email]').textContent = c.email;
+        sheet.querySelector('[data-ps-sent]').hidden = !j.emailSent;
+        sheet.querySelector('[data-ps-failed]').hidden = !!j.emailSent;
+        sheetStep('check'); render();
+      }, function () { btn.disabled = false; btn.textContent = 'Save and continue'; err.textContent = 'We couldn’t save that. Check your connection and try again.'; err.hidden = false; });
+    });
+  }
+
   // A saved Shop project has no Builder data yet; normalize() turns its runs into runs to walk.
   function fromServer(row) {
     var c = row.customer || {};
@@ -599,7 +686,9 @@
     var e = P.estimate(p), final = p.finalDesign && P.stateAtLeast(p, 'awaiting-approval');
     var main;
     if (tab === 'build') {
-      main = (editable() ? '' : '<div class="note">Your project was submitted, so editing is locked. <button type="button" class="why-link" data-tab-go="messages">Message us</button> to change something.</div>') +
+      main = (DRAFT ? '<div class="note draft-note">' + (p.serverId ? 'Open the link we emailed you to keep this project. Until then, what you add stays on this device.'
+          : 'Your project is only on this device until you save it. <button type="button" class="why-link" data-save-open>Save my project</button>') + '</div>' : '') +
+        (editable() ? '' : '<div class="note">Your project was submitted, so editing is locked. <button type="button" class="why-link" data-tab-go="messages">Message us</button> to change something.</div>') +
         (editable() ? stepper() : '') +
         (stage === 'project' ? projectStage() : stage === 'run' ? runStage(runIdx) : reviewStage(req));
     } else main = { review: questionsTab, design: designTab, approval: approvalTab, production: productionTab, messages: messagesTab }[tab]();
@@ -607,7 +696,7 @@
     root.innerHTML =
       '<header class="project-head">' +
         '<div class="ph-main"><label class="sr-only" for="p-name">Project name</label><input id="p-name" class="ph-name" data-bind="name" value="' + esc(p.name) + '"' + dis() + ' />' +
-        P.badge(p.state) + '<span class="save-state" aria-live="polite" data-save-state>' + (savedAt ? 'Saved ' + savedAt : 'Saved') + '</span></div>' +
+        P.badge(p.state) + '<span class="save-state" aria-live="polite" data-save-state>' + (DRAFT ? 'Not saved yet' : savedAt ? 'Saved ' + savedAt : 'Saved') + '</span></div>' +
         '<div class="ph-total"><span class="muted">' + (final ? 'Final price' : 'Estimate') + '</span><strong data-ph-total>' + FT.money(final ? p.finalDesign.price : e.total) + '</strong></div>' +
         (editable() && !P.stateAtLeast(p, 'submitted') ? '' : '<nav class="ph-tabs" aria-label="Project sections">' + TABS.map(function (x) {
           var ok = x[2]();
@@ -631,6 +720,11 @@
 
   // ---------- Saving ----------
   function persist() {
+    if (DRAFT) {
+      FT.store.set('draftProject', p);
+      if (saveAsks === 1 && !p.serverId) askSave(); // they chose Look around first: ask once more at their first answer
+      return;
+    }
     clearTimeout(saveTimer);
     var ss = root.querySelector('[data-save-state]'); if (ss) ss.textContent = 'Saving…';
     saveTimer = setTimeout(function () {
@@ -662,6 +756,7 @@
   function sendMessage(text, run, done) {
     var at = new Date().toISOString();
     if (!LIVE) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
+    if (DRAFT) { askSave(); done(false); return; }
     var about = run != null && p.runs[run] ? 'About ' + p.runs[run].name + ': ' : '';
     FT.api('/api/messages', { auth: true, body: { project_id: p.id, body: about + text } }).then(function (res) {
       if (res.ok) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
@@ -745,6 +840,7 @@
     var b = ev.target.closest('button');
     if (!b || b.disabled) return;
     var d = b.dataset, r = p.runs[runIdx];
+    if (b.hasAttribute('data-save-open')) { askSave(); return; }
     if (d.tab) { tab = d.tab; render(); return; }
     if (d.tabGo) { tab = d.tabGo; render(); window.scrollTo({ top: Math.max(0, root.offsetTop - 70), behavior: 'smooth' }); return; }
     if (d.stage) { go(d.stage); if (b.hasAttribute('data-to-runs')) { var rs3 = root.querySelector('.runs-section'); if (rs3) setTimeout(function () { rs3.scrollIntoView({ block: 'start' }); }, 0); } return; }
@@ -851,6 +947,7 @@
     }, 30);
   }
   function submit() {
+    if (DRAFT) { askSave(); return; }
     var err = document.getElementById('review-error');
     if (!P.shippingDone(p)) { err.textContent = 'Add your shipping address so we can include shipping in your final price.'; err.hidden = false; focusIn('shipping'); return; }
     if (!document.getElementById('review-ok').checked) { err.textContent = 'Please confirm your measurements to submit.'; err.hidden = false; document.getElementById('review-ok').focus(); return; }
@@ -882,5 +979,5 @@
     img.src = url;
   }
 
-  if (LIVE) loadLive(); else loadLocal();
+  if (LIVE && hashParam('p') === 'new') startDraft(); else if (LIVE) loadLive(); else loadLocal();
 })();
