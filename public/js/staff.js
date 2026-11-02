@@ -48,10 +48,32 @@
     b.messages = (row.messages || []).map(function (m) { return { who: m.author === 'staff' ? 'FenceTopper' : (c.first || 'Customer'), text: m.body, at: m.created_at }; });
     b.questions = [];
     b.verified = {}; Object.keys(st.verified || {}).forEach(function (k) { b.verified[k] = true; });
-    if (row.final_design) b.finalDesign = row.final_design;
-    var proj = P.normalize(b);
-    proj.activity = (proj.activity || []).map(function (a) { return a.who === 'You' ? Object.assign({}, a, { who: c.first || 'Customer' }) : a; }).concat((st.activity || []).map(function (a) { return { at: a.at, who: a.who, text: a.text }; }))
+    delete b.finalDesign; if (row.final_design) b.finalDesign = row.final_design; // only staff publish a design
+    var proj = trusted(b, row, c);
+    // The customer's own log always shows as the customer, whatever name it carries; staff entries come from the server.
+    proj.activity = (proj.activity || []).map(function (a) { return { at: a.at, who: c.first || 'Customer', text: String(a.text || '') }; }).concat((st.activity || []).map(function (a) { return { at: a.at, who: a.who, text: a.text }; }))
       .sort(function (x, y) { return x.at < y.at ? -1 : 1; });
+    return proj;
+  }
+  // The Builder data is written by the customer, so check its shape before the review screens use it: numbers
+  // stay numbers, photos must be image data, and height and color come from the server's checked columns.
+  // Data that won't load falls back to the runs, height and color the server checked.
+  var THUMB = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
+  function trusted(b, row, c) {
+    var proj;
+    try {
+      proj = P.normalize(b);
+      proj.runs.forEach(function (r) {
+        if (!Array.isArray(r.posts) || !Array.isArray(r.spans)) throw new Error('bad run');
+        r.qin = Number(r.qin) || 0; r.height = Number(r.height) || null;
+        r.spans = r.spans.map(function (x) { return Number(x) > 0 ? Number(x) : null; });
+        Object.keys(r.photos || {}).forEach(function (k) { var ph = r.photos[k]; if (ph && typeof ph === 'object' && !THUMB.test(String(ph.thumb || ''))) delete ph.thumb; });
+      });
+    } catch (e) {
+      proj = P.normalize({ id: row.id, name: b.name, state: row.state, runQin: row.runs, height: row.height, color: row.color, first: c.first, last: c.last, email: c.email, mobile: c.mobile, messages: b.messages, verified: b.verified, finalDesign: b.finalDesign, questions: [] });
+    }
+    proj.height = row.height; proj.color = row.color;
+    proj.estimates = (Array.isArray(proj.estimates) ? proj.estimates : []).map(function (x) { return { at: x.at, source: String(x.source || ''), rateVersion: Number(x.rateVersion) || 0, total: Number(x.total) || 0 }; });
     return proj;
   }
   var FRACTIONS = ['', '1/4', '1/2', '3/4'];
@@ -155,7 +177,7 @@
         }).join('');
         var photos = P.photoSlots(r).map(function (sl) {
           var ph = r.photos[sl.id];
-          return '<li class="' + (ph ? 'has' : 'missing') + '">' + (ph && ph.thumb ? '<img src="' + ph.thumb + '" alt="" />' : '<span aria-hidden="true">' + (ph ? '✓' : '○') + '</span>') + esc(sl.name) + '</li>';
+          return '<li class="' + (ph ? 'has' : 'missing') + '">' + (ph && ph.thumb ? '<img src="' + esc(ph.thumb) + '" alt="" />' : '<span aria-hidden="true">' + (ph ? '✓' : '○') + '</span>') + esc(sl.name) + '</li>';
         }).join('');
         return '<section class="panel"><h3>' + esc(r.name) + ' · ' + (len ? fmtQin(len) + ' C to C' : 'estimate ' + fmtQin(r.qin)) + '</h3>' +
           '<p class="muted">' + r.posts.length + ' posts · ' + P.runHeight(p, r) + ' in · ' + esc(COLOR_NAMES[P.runColor(p, r)] || '') + (r.extender ? ' · ' + esc(P.extName(r.extender)) + ' ' + fit(r.extender) : '') + '</p>' +
