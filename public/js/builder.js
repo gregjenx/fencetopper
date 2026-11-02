@@ -133,6 +133,7 @@
     var c = row.customer || {};
     var b = row.builder || { runQin: row.runs, height: row.height, color: row.color, extender: row.extender, notes: row.notes, estimate: row.estimate_cents / 100, createdAt: row.created_at };
     b.id = row.id; b.name = b.name || row.name; b.state = row.state;
+    if (row.final_design) b.finalDesign = row.final_design; // published by staff (functions/api/staff/project)
     b.first = c.first; b.last = c.last; b.email = c.email;
     b.messages = (row.messages || []).map(function (m) { return { who: m.author === 'staff' ? 'FenceTopper' : 'You', text: m.body, at: m.created_at }; });
     return P.normalize(b);

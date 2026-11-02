@@ -87,8 +87,20 @@ If the saved screen instead says "Your project is saved on this device", a key i
 - **Lost the link:** **Email me a link** on `/my-project` sends a new one. It only sends to emails that have a project, and it gives the same answer either way.
 - **Formspree:** still used by the Contact page, and as the fallback if Supabase or Resend is down.
 
+## Staff queue
+
+Staff review projects at `/staff`: a queue of every project, and a review page for each one where you can verify answers, ask the customer a question, publish the final design and price, unlock a project for changes, and move it along. Asking a question or publishing a design emails the customer a link to their project. Their reply moves the project back to **Needs review**.
+
+To switch it on:
+
+1. In Supabase, go to **SQL Editor**, choose **New query**, paste all of `supabase/migrations/0004_staff.sql`, and choose **Run**.
+2. In a new query, add each person who should get in, with the email they'll sign in with:
+   `insert into public.staff_emails (email, name) values ('you@example.com', 'Your name');`
+3. Go to **Authentication**, then **URL Configuration**, and add these **Redirect URLs**: `https://fencetopper.com/staff`, `https://www.fencetopper.com/staff` and `https://*.pages.dev/staff`.
+4. Open `/staff`, enter your email, and open the link we send you.
+
+To remove someone, delete their row from **staff_emails**. They lose access on their next click.
+
 ## Replying to customers
 
-For now, reply from your inbox. Every team email has the customer's address as its reply-to.
-
-Staff replies inside the project page (the messages table, with `author = 'staff'`) come with staff sign-in in Phase 2. Until then, you can add a reply by hand in Supabase's Table Editor if you want it to show on their page.
+Reply from your inbox, since every team email has the customer's address as its reply-to, or use **Ask the customer** in the staff queue so the question also shows on their project page.

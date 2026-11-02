@@ -12,7 +12,7 @@ export async function onRequestPost({ request, env }) {
   if (!p) return json({ configured: true, error: 'Project not found.' }, 404);
   const ins = await db(env, 'messages', { method: 'POST', prefer: 'return=minimal', body: { project_id: p.id, author: 'customer', author_id: userId, body: text } });
   if (!ins.ok) return json({ configured: true, error: 'We couldn’t send that. Try again.' }, 502);
-  await db(env, `projects?id=eq.${p.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { last_customer_activity_at: new Date().toISOString() } });
+  await db(env, `projects?id=eq.${p.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { last_customer_activity_at: new Date().toISOString(), ...(p.state === 'waiting' ? { state: 'reply-received' } : {}) } });
   await notify(env, 'message', p, text);
   return json({ configured: true, sent: true });
 }

@@ -1,10 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
-import { assetVersion } from '../data/site';
+import { assetVersion, features } from '../data/site';
 ---
 <Base title="Staff queue" path="/staff" noindex variant="staff" description="FenceTopper staff project queue.">
   <section class="wrap staff-page">
-    <div class="staff-title"><h1>Project queue</h1><p class="muted">Preview data from this browser. <span class="placeholder">Staff sign-in coming</span></p></div>
+    <div class="staff-title"><h1>Project queue</h1><p class="muted" data-staff-who>{features.preview ? 'Preview data from this browser.' : ''}</p></div>
     <div class="queue-tabs" role="tablist" aria-label="Queues" data-queue-tabs></div>
     <div id="staff-queue"></div>
   </section>

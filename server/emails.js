@@ -110,3 +110,37 @@ ${staffLink ? `<p style="margin:12px 0 0;"><a href="${esc(staffLink)}" style="co
   const text = `${heading}\n\n${message ? message + '\n\n' : ''}${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${note}${staffLink ? `\n\nOpen in Supabase: ${staffLink}` : ''}`;
   return { subject, html, text };
 }
+
+// To a staff member who asked to sign in at /staff.
+export function staffSignInEmail({ name, link }) {
+  const subject = `Your ${brand.name} staff sign-in link`;
+  const html = layout({
+    preview: 'Open the project queue.',
+    body: `<p style="margin:0 0 14px;">Hi ${esc(name || 'there')},</p>
+<p style="margin:0;">Here’s your link to the project queue.</p>
+${button(link, 'Open the queue')}
+<p style="margin:0;">If you didn’t ask for this, you can ignore this email.</p>`,
+    footer: 'The button works for 24 hours and can be used once.',
+  });
+  const text = `Hi ${name || 'there'},\n\nHere's your link to the project queue:\n${link}\n\nIf you didn't ask for this, you can ignore this email. The link works for 24 hours and can be used once.`;
+  return { subject, html, text };
+}
+
+// To the customer when staff ask a question or publish their design. {link} signs them in to their project.
+export function staffUpdateEmail({ kind, first, text, price, link }) {
+  const design = kind === 'design';
+  const subject = design ? `Your ${brand.name} design is ready to approve` : `A question about your ${brand.name} project`;
+  const lead = design ? `Your design is ready. Your final price is <strong>${esc(price)}</strong>.` : 'We have a question about your project:';
+  const html = layout({
+    preview: design ? `Your final price is ${price}.` : String(text || '').slice(0, 90),
+    body: `<p style="margin:0 0 14px;">Hi ${esc(first || 'there')},</p>
+<p style="margin:0 0 14px;">${lead}</p>
+${text ? `<p style="margin:0 0 14px;padding:12px 14px;background:#f4f2ec;border-radius:8px;">${esc(text).replace(/\n/g, '<br>')}</p>` : ''}
+${button(link, design ? 'Review my design' : 'Answer in my project')}
+<p style="margin:0 0 14px;">You can also just reply to this email.</p>
+<p style="margin:0;">The ${esc(brand.name)} team</p>`,
+    footer: 'The button works for 24 hours. After that, use “Email me a link” on your project page.',
+  });
+  const plain = `Hi ${first || 'there'},\n\n${design ? `Your design is ready. Your final price is ${price}.` : 'We have a question about your project:'}\n${text ? '\n' + text + '\n' : ''}\n${design ? 'Review my design' : 'Answer in my project'}: ${link}\n\nYou can also just reply to this email.\n\nThe ${brand.name} team`;
+  return { subject, html, text: plain };
+}

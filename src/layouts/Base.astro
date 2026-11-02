@@ -15,7 +15,7 @@ interface Props {
 }
 const { title, description, path, image = '/img/og.jpg', schema = [], breadcrumb, noindex = false, variant = 'site' } = Astro.props;
 const staff = variant === 'staff';
-const staffNav = [{ href: '/staff', label: 'Queue' }, { href: '/staff-rates', label: 'Rates' }];
+const staffNav = [{ href: '/staff', label: 'Queue' }, ...(features.preview ? [{ href: '/staff-rates', label: 'Rates' }] : [])]; // rates are still browser-only
 const canonical = brand.url + (path === '/' ? '/' : path);
 const fullTitle = path === '/' ? `${brand.homeTitle} | ${brand.name}` : `${title} | ${brand.name}`;
 

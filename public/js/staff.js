@@ -1,11 +1,59 @@
 /* Staff pages: project queue (B23), project review and dated rates.
-   PREVIEW ONLY: no staff sign-in, and data lives in this browser (see projects.js). */
+   Live: staff sign in with an emailed link (functions/api/staff/login), and the queue and project review
+   read and change real projects through functions/api/staff/projects and project. Only emails on the
+   staff_emails list get in (supabase/migrations/0004_staff.sql).
+   With features.preview on, they run on this browser's sample data instead (see projects.js). */
 (function () {
   'use strict';
   var FT = window.FT, P = FT && FT.projects;
   if (!P) return;
-  P.seedDemo();
+  var LIVE = !(window.FT_FEATURES || {}).preview;
+  if (!LIVE) P.seedDemo();
   var esc = P.esc, COLOR_NAMES = window.FT_COLOR_NAMES || {};
+
+  // ---------- Live: sign-in and data ----------
+  // Arriving from the emailed link, Supabase puts the session in the address hash.
+  var linkHash = new URLSearchParams(location.hash.replace(/^#/, ''));
+  if (linkHash.get('access_token')) {
+    FT.session.set({ access_token: linkHash.get('access_token'), refresh_token: linkHash.get('refresh_token'), expires_in: linkHash.get('expires_in') });
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  function signInPanel(el, why) {
+    el.innerHTML = '<div class="panel staff-signin"><h1>Staff sign-in</h1><p class="muted">' + esc(why || 'Enter your work email and we’ll send you a link to the project queue.') + '</p>' +
+      '<form class="sheet-form" data-staff-signin novalidate><div class="field"><label for="staff-email">Email</label><input id="staff-email" type="email" autocomplete="email" inputmode="email" required /></div>' +
+      '<p class="field-error" role="alert" hidden></p><button class="btn btn-primary" type="submit">Email me a link</button></form>' +
+      '<p class="note" data-staff-sent hidden>If that email is on the staff list, a link is on its way. It works for 24 hours.</p></div>';
+    var f = el.querySelector('[data-staff-signin]');
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = document.getElementById('staff-email').value.trim(), err = f.querySelector('.field-error'), btn = f.querySelector('button');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Enter a valid email address.'; err.hidden = false; return; }
+      btn.disabled = true; btn.textContent = 'Sending…';
+      FT.api('/api/staff/login', { body: { email: email } }).then(function () { f.hidden = true; el.querySelector('[data-staff-sent]').hidden = false; },
+        function () { btn.disabled = false; btn.textContent = 'Email me a link'; err.textContent = 'Check your connection and try again.'; err.hidden = false; });
+    });
+  }
+  // What to do with a failed staff request: sign in again, or say what went wrong.
+  function staffFailed(el, res) {
+    if (res.status === 401 || res.status === 403 || !FT.session.get()) { signInPanel(el, res.status === 403 ? 'That email isn’t on the staff list. Sign in with your work email.' : null); return; }
+    el.innerHTML = '<div class="panel empty-state"><p class="muted">' + esc((res.data && res.data.error) || 'We couldn’t load that. Check your connection and reload.') + '</p></div>';
+  }
+  // A server row in the shape the review screens use (the same one the customer's Builder builds).
+  function toProject(row) {
+    var c = row.customers || {}, st = row.staff || {};
+    var b = Object.assign({}, row.builder || { runQin: row.runs, height: row.height, color: row.color, extender: row.extender, notes: row.notes, estimate: row.estimate_cents / 100 });
+    b.id = row.id; b.name = row.name || b.name; b.state = row.state;
+    b.first = c.first; b.last = c.last; b.email = c.email; b.mobile = c.mobile;
+    b.createdAt = row.created_at; b.updatedAt = row.updated_at;
+    b.messages = (row.messages || []).map(function (m) { return { who: m.author === 'staff' ? 'FenceTopper' : (c.first || 'Customer'), text: m.body, at: m.created_at }; });
+    b.questions = [];
+    b.verified = {}; Object.keys(st.verified || {}).forEach(function (k) { b.verified[k] = true; });
+    if (row.final_design) b.finalDesign = row.final_design;
+    var proj = P.normalize(b);
+    proj.activity = (proj.activity || []).map(function (a) { return a.who === 'You' ? Object.assign({}, a, { who: c.first || 'Customer' }) : a; }).concat((st.activity || []).map(function (a) { return { at: a.at, who: a.who, text: a.text }; }))
+      .sort(function (x, y) { return x.at < y.at ? -1 : 1; });
+    return proj;
+  }
   var FRACTIONS = ['', '1/4', '1/2', '3/4'];
   function fmtQin(q) {
     q = Math.max(0, Math.round(q || 0));
@@ -28,8 +76,9 @@
       ['all', 'All', null],
     ];
     var q = (location.hash.match(/q=(\w+)/) || [])[1] || 'review';
+    var liveList = [];
     var renderQueue = function () {
-      var list = P.all();
+      var list = LIVE ? liveList : P.all();
       document.querySelector('[data-queue-tabs]').innerHTML = QUEUES.map(function (x) {
         var n = x[2] ? list.filter(function (p) { return x[2].indexOf(p.state) >= 0; }).length : list.length;
         return '<button type="button" role="tab" data-q="' + x[0] + '" aria-selected="' + (x[0] === q) + '">' + x[1] + ' <span class="count">' + n + '</span></button>';
@@ -51,16 +100,28 @@
       var b = ev.target.closest('[data-q]'); if (!b) return;
       q = b.dataset.q; history.replaceState(null, '', '#q=' + q); renderQueue();
     });
-    renderQueue();
+    if (!LIVE) renderQueue();
+    else {
+      var tabs = document.querySelector('[data-queue-tabs]'), who = document.querySelector('[data-staff-who]');
+      queueEl.innerHTML = '<p class="muted">Loading…</p>';
+      FT.api('/api/staff/projects', { auth: true }).then(function (res) {
+        if (!res.ok) { tabs.hidden = true; staffFailed(queueEl, res); return; }
+        tabs.hidden = false;
+        if (who) who.textContent = 'Signed in as ' + res.data.staff.email + '.';
+        liveList = (res.data.projects || []).map(toProject);
+        renderQueue();
+      }, function () { staffFailed(queueEl, { status: 0 }); });
+    }
   }
 
   // ---------- Project review ----------
   var projEl = document.getElementById('staff-project');
   if (projEl) {
     var pid = decodeURIComponent((location.hash.match(/p=([^&]+)/) || [])[1] || '');
-    var p = P.get(pid);
-    if (!p) { projEl.innerHTML = '<div class="panel empty-state"><h1>Project not found</h1><a class="btn btn-outline" href="' + FT.link('/staff') + '">Back to the queue</a></div>'; return; }
-    p.verified = p.verified || {};
+    var p = LIVE ? null : P.get(pid);
+    var notFound = function () { projEl.innerHTML = '<div class="panel empty-state"><h1>Project not found</h1><a class="btn btn-outline" href="' + FT.link('/staff') + '">Back to the queue</a></div>'; };
+    if (!LIVE && !p) { notFound(); return; }
+    if (p) p.verified = p.verified || {};
     var NEXT = { submitted: 'designing', 'reply-received': 'designing', designing: null, 'awaiting-approval': null, 'deposit-due': 'scheduled', scheduled: 'in-production', 'in-production': 'quality', quality: 'balance-due', 'balance-due': 'ready-to-ship', 'ready-to-ship': 'shipped', shipped: 'delivered', delivered: 'closed' };
     var vRow = function (key, label, value, check) {
       var ok = p.verified[key];
@@ -120,7 +181,8 @@
                 '<div class="field"><label for="final-note">Note to customer <span class="muted">(optional)</span></label><textarea id="final-note"></textarea></div>' +
                 '<button class="btn btn-primary btn-block" type="button" data-publish>Publish design and price</button>' : '') +
               (next ? '<hr><button class="btn btn-outline btn-block" type="button" data-advance="' + next + '">Move to: ' + esc(P.STATES[next].staff) + '</button>' : '') +
-              '<a class="btn btn-outline btn-block" href="' + FT.link('/project') + '#p=' + encodeURIComponent(p.id) + '">Open customer view</a>' +
+              (['submitted', 'reply-received', 'waiting', 'designing'].indexOf(p.state) >= 0 ? '<button class="btn btn-outline btn-block" type="button" data-advance="needs-fix">Unlock so they can make changes</button>' : '') +
+              (LIVE ? '' : '<a class="btn btn-outline btn-block" href="' + FT.link('/project') + '#p=' + encodeURIComponent(p.id) + '">Open customer view</a>') +
             '</section>' +
             '<section class="panel"><h3>Estimate versions</h3><div class="table-wrap"><table><thead><tr><th scope="col">When</th><th scope="col">From</th><th scope="col">Rates</th><th scope="col">Total</th></tr></thead><tbody>' + (estRows || '<tr><td colspan="4" class="muted">None</td></tr>') + '</tbody></table></div>' +
               '<p class="hint">Current rates (v' + e.rateVersion + ') give ' + FT.money(e.total) + '.</p></section>' +
@@ -132,8 +194,32 @@
           '</div>' +
         '</div>';
     };
+    // Live: each action goes to the server, which saves it, emails the customer when needed, and sends back
+    // the updated project.
+    var act = function (b, body, done) {
+      body.project_id = p.id; b.disabled = true;
+      FT.api('/api/staff/project', { auth: true, body: body }).then(function (res) {
+        b.disabled = false;
+        if (!res.ok) { if (res.status === 401 || res.status === 403) staffFailed(projEl, res); else FT.toast((res.data && res.data.error) || 'We couldn’t save that. Try again.'); return; }
+        p = toProject(res.data.project); renderProject();
+        FT.toast(done + (res.data.emailSent === false ? ' The email to the customer didn’t send, so let them know.' : ''));
+      }, function () { b.disabled = false; FT.toast('We couldn’t save that. Check your connection and try again.'); });
+    };
     projEl.addEventListener('click', function (ev) {
       var b = ev.target.closest('button'); if (!b) return;
+      if (LIVE) {
+        if (b.dataset.verify) act(b, { action: 'verify', key: b.dataset.verify }, 'Verified.');
+        else if (b.dataset.ask) { var t0 = document.getElementById('ask-text'); t0.value = b.dataset.ask + ': '; t0.focus(); }
+        else if (b.hasAttribute('data-ask-send')) {
+          var q0 = document.getElementById('ask-text').value.trim(); if (!q0) { document.getElementById('ask-text').focus(); return; }
+          act(b, { action: 'ask', text: q0 }, 'Question sent. We emailed the customer.');
+        } else if (b.hasAttribute('data-publish')) {
+          var pr = Number(document.getElementById('final-price').value);
+          if (!(pr > 0)) { document.getElementById('final-price').focus(); return; }
+          act(b, { action: 'publish', price: pr, note: document.getElementById('final-note').value.trim() }, 'Design published. We emailed the customer.');
+        } else if (b.dataset.advance) act(b, { action: 'advance', state: b.dataset.advance }, 'Moved to ' + P.STATES[b.dataset.advance].staff + '.');
+        return;
+      }
       if (b.dataset.verify) { p.verified[b.dataset.verify] = true; P.log(p, 'Staff', 'Verified ' + b.dataset.verify); }
       else if (b.dataset.ask) { var t = document.getElementById('ask-text'); t.value = b.dataset.ask + ': '; t.focus(); return; }
       else if (b.hasAttribute('data-ask-send')) {
@@ -151,7 +237,15 @@
       else return;
       P.save(p); renderProject(); FT.toast('Saved');
     });
-    renderProject();
+    if (!LIVE) renderProject();
+    else {
+      projEl.innerHTML = '<p class="muted">Loading…</p>';
+      FT.api('/api/staff/project?id=' + encodeURIComponent(pid), { auth: true }).then(function (res) {
+        if (res.status === 404) { notFound(); return; }
+        if (!res.ok) { staffFailed(projEl, res); return; }
+        p = toProject(res.data.project); renderProject();
+      }, function () { staffFailed(projEl, { status: 0 }); });
+    }
   }
 
   // ---------- Rates ----------

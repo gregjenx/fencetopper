@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import { features } from './src/data/site.ts';
 
 // Pages left out of dist/ while their switch is off: the Builder with features.builder, and the
-// browser-only sign-in, My projects and staff pages with features.preview.
+// browser-only sign-in, My projects and staff rates with features.preview. The staff queue and project
+// review are live (functions/api/staff), so they're always built.
 const switched = [
   { on: features.builder, pages: ['project'], js: ['builder.js', 'projects.js'] },
-  { on: features.preview, pages: ['account', 'projects', 'staff', 'staff-project', 'staff-rates'], js: ['account.js', 'staff.js'] },
+  { on: features.preview, pages: ['account', 'projects', 'staff-rates'], js: ['account.js'] },
 ];
 const launchSwitch = {
   name: 'launch-switch',

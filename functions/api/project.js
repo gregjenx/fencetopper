@@ -5,7 +5,7 @@
 import { configured, json, readJson, db, userFromRequest } from '../../server/lib.js';
 import { projectAccess, cleanBuilder, EDITABLE } from '../../server/project.js';
 
-const FIELDS = 'id,name,state,runs,height,color,extender,notes,estimate_cents,builder,created_at,updated_at,submitted_at,customers(first,last,email),messages(author,body,created_at)';
+const FIELDS = 'id,name,state,runs,height,color,extender,notes,estimate_cents,builder,final_design,created_at,updated_at,submitted_at,customers(first,last,email),messages(author,body,created_at)';
 
 export async function onRequestGet({ request, env }) {
   if (!configured(env)) return json({ configured: false }, 503);
