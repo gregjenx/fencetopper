@@ -81,7 +81,7 @@ ${button(link, 'Open my project')}
 
 // To the team. A saved project isn't a hand-off: staff offer help, the customer drives.
 export function teamNotice({ kind = 'saved', first, last, email, mobile, summary, estimate, runs, notes, extender, marketing, staffLink, message, details }) {
-  const heading = { saved: 'New project saved', updated: 'Project updated', submitted: 'Project submitted for review', message: 'New message' }[kind] || 'Project activity';
+  const heading = { saved: 'New project saved', updated: 'Project updated', submitted: 'Project submitted for review', message: 'New message', approved: 'Design approved' }[kind] || 'Project activity';
   const subject = `${heading}: ${first} ${last}, ${summary}`;
   const rows = [
     ['Customer', `${first} ${last}`],
@@ -96,6 +96,8 @@ export function teamNotice({ kind = 'saved', first, last, email, mobile, summary
   ];
   const note = kind === 'submitted'
     ? 'The customer has asked for review. Check the measurements and reply in the project.'
+    : kind === 'approved'
+    ? 'Online payment isn’t connected yet. Send them how to pay the deposit, then move the project to Scheduled in the staff queue.'
     : 'The customer is still working on this. Offer help if it’s useful (“Happy to look at your photos when you’ve added them”), but the next step is theirs.';
   const html = layout({
     preview: `${first} ${last}: ${summary}`,

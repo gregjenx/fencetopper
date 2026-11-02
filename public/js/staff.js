@@ -52,6 +52,7 @@
     var proj = trusted(b, row, c);
     // The customer's own log always shows as the customer, whatever name it carries; staff entries come from the server.
     proj.activity = (proj.activity || []).map(function (a) { return { at: a.at, who: c.first || 'Customer', text: String(a.text || '') }; }).concat((st.activity || []).map(function (a) { return { at: a.at, who: a.who, text: a.text }; }))
+      .concat(row.final_design && row.final_design.approval ? [{ at: row.final_design.approval.at, who: row.final_design.approval.name, text: 'Approved design version ' + row.final_design.approval.version }] : []) // recorded by the server (functions/api/approve)
       .sort(function (x, y) { return x.at < y.at ? -1 : 1; });
     return proj;
   }

@@ -133,7 +133,7 @@
     var c = row.customer || {};
     var b = row.builder || { runQin: row.runs, height: row.height, color: row.color, extender: row.extender, notes: row.notes, estimate: row.estimate_cents / 100, createdAt: row.created_at };
     b.id = row.id; b.name = b.name || row.name; b.state = row.state;
-    if (row.final_design) b.finalDesign = row.final_design; // published by staff (functions/api/staff/project)
+    if (row.final_design) { b.finalDesign = row.final_design; if (row.final_design.approval) b.approval = row.final_design.approval; } // published by staff (functions/api/staff/project)
     b.first = c.first; b.last = c.last; b.email = c.email;
     b.messages = (row.messages || []).map(function (m) { return { who: m.author === 'staff' ? 'FenceTopper' : 'You', text: m.body, at: m.created_at }; });
     return P.normalize(b);
@@ -640,8 +640,10 @@
       '<p class="muted">Your topper is custom-built to this design.' + (S.extStatus !== 'installed' ? ' Install your extensions exactly where the design shows them.' : '') + '</p>' +
       '<label class="check" for="terms"><input id="terms" type="checkbox" /> <span>I approve this design and price, and I understand it’s built to order.</span></label>' +
       '<p class="field-error" id="terms-error" role="alert" hidden>Please check the box to approve.</p>' +
-      '<div class="pay-card"><strong>Payment isn’t connected yet.</strong> <span class="placeholder">Placeholder</span> Approving in this preview records your approval and skips the payment step.</div>' +
-      '<button class="btn btn-primary" type="button" data-approve>Approve and pay deposit</button></section>';
+      (LIVE ? '<p class="note">After you approve, we’ll email you how to pay the deposit. We start building once it’s paid.</p>' +
+        '<p class="field-error" id="approve-error" role="alert" hidden></p><button class="btn btn-primary" type="button" data-approve>Approve design</button></section>'
+      : '<div class="pay-card"><strong>Payment isn’t connected yet.</strong> <span class="placeholder">Placeholder</span> Approving in this preview records your approval and skips the payment step.</div>' +
+        '<button class="btn btn-primary" type="button" data-approve>Approve and pay deposit</button></section>');
   }
   function productionTab() {
     var steps = [['scheduled', 'Approved and deposit paid'], ['in-production', 'In production'], ['quality', 'Quality review'], ['balance-due', 'Boxed, balance due'], ['ready-to-ship', 'Final payment'], ['shipped', 'Shipped'], ['delivered', 'Delivered']];
@@ -649,7 +651,7 @@
     return '<section class="panel"><h2>Production</h2><ol class="timeline">' + steps.map(function (s) {
       var k = order.indexOf(s[0]), cls = k < cur ? 'done' : k === cur ? 'current' : 'future';
       return '<li class="' + cls + '"><span class="tl-dot" aria-hidden="true">' + (cls === 'done' ? '✓' : '') + '</span>' + s[1] + (cls === 'current' ? ' <span class="muted">(now)</span>' : '') + '</li>';
-    }).join('') + '</ol><p class="muted">Nothing needed from you while we build.</p></section>';
+    }).join('') + '</ol><p class="muted">' + (p.state === 'deposit-due' ? 'You approved your design. We’ll email you how to pay the deposit, and we start building once it’s paid.' : 'Nothing needed from you while we build.') + '</p></section>';
   }
   function messagesTab() {
     return '<section class="panel"><h2>Messages</h2><ul class="thread">' + (p.messages.length ? p.messages.map(function (m) {
@@ -932,6 +934,18 @@
     if (b.hasAttribute('data-approve')) {
       var box = root.querySelector('#terms');
       if (!box.checked) { root.querySelector('#terms-error').hidden = false; box.focus(); return; }
+      if (LIVE) {
+        b.disabled = true; b.textContent = 'Approving…';
+        FT.api('/api/approve', { auth: true, body: { project_id: p.id, version: p.finalDesign.version } }).then(function (res) {
+          if (res.ok && res.data && res.data.approved) {
+            p.approval = res.data.approval; p.state = res.data.state; tab = 'production'; render();
+            FT.toast('Design approved. We’ll email you about the deposit.'); return;
+          }
+          b.disabled = false; b.textContent = 'Approve design';
+          var ae = root.querySelector('#approve-error'); ae.textContent = (res.data && res.data.error) || 'We couldn’t record that. Try again.'; ae.hidden = false;
+        }, function () { b.disabled = false; b.textContent = 'Approve design'; var ae = root.querySelector('#approve-error'); ae.textContent = 'Check your connection and try again.'; ae.hidden = false; });
+        return;
+      }
       var ct = FT.store.get('contact', {}) || {};
       p.approval = { name: ((ct.first || p.first || '') + ' ' + (ct.last || p.last || '')).trim() || 'Customer', at: new Date().toISOString(), version: p.finalDesign.version };
       p.state = 'scheduled'; P.log(p, 'You', 'Approved design version ' + p.finalDesign.version); P.save(p); tab = 'production'; render(); FT.toast('Design approved'); return;
