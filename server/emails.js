@@ -96,8 +96,7 @@ ${open ? `
 You left ${open} for us to work out with you. That's fine: we'll ask before we build.
 ` : ''}
 What happens next:
-${NEXT_STEPS.map((s, i) => `${i + 1}. ${s.replace(/’/g, "'")}`).join('
-')}
+${NEXT_STEPS.map((s, i) => `${i + 1}. ${s.replace(/’/g, "'")}`).join('\n')}
 
 Nothing is built or charged until you approve your final design.
 
