@@ -334,7 +334,7 @@
       first: project.first, last: project.last, email: project.email, mobile: project.mobile, notes: project.notes,
       marketing: project.updates, runs: project.runQin, height: project.height, color: project.color,
       extender: project.extender ? { id: project.extender.id, name: project.extender.name } : null,
-      project_id: editing ? editing.projectId : undefined, company: v('s-company'),
+      project_id: editing ? editing.projectId : undefined, company: v('s-hp'),
     } }).then(function (res) {
       var j = res.data || {};
       // A new customer gets a key to this project, so they go straight on to the Builder. A returning email

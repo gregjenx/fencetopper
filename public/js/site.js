@@ -75,11 +75,19 @@
     var n = cart().length;
     document.querySelectorAll('[data-cart-count]').forEach(function (el) { el.textContent = n; el.hidden = n === 0; });
   }
-  function toast(msg) {
+  // action { label, run }: adds a button (such as Undo) and keeps the toast up longer so there's time to tap it.
+  function toast(msg, action) {
+    document.querySelectorAll('.toast.has-action').forEach(function (x) { x.remove(); });
     var t = document.createElement('div');
-    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    t.className = 'toast' + (action ? ' has-action' : ''); t.setAttribute('role', 'status');
+    var span = document.createElement('span'); span.textContent = msg; t.appendChild(span);
+    if (action) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'toast-action'; b.textContent = action.label;
+      b.addEventListener('click', function () { t.remove(); action.run(); });
+      t.appendChild(b);
+    }
     document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 2600);
+    setTimeout(function () { t.remove(); }, action ? 8000 : 2600);
   }
 
   // ---------- Saved-project sign-in (Phase 1 backend, functions/api) ----------
@@ -160,7 +168,7 @@
     var qw = words(q), low = q.toLowerCase(), best = null, bestScore = 0;
     (KB.faqs || []).forEach(function (f) {
       var s = 0;
-      f.tags.forEach(function (t) { if (low.indexOf(t) >= 0) s += 3; });
+      f.tags.forEach(function (t) { if (/[a-z0-9]/.test(t) ? new RegExp('(^|[^a-z0-9])' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(low) : low.indexOf(t) >= 0) s += 3; }); // at the start of a word, so "return" doesn't match "turn"
       var fw = words(f.q);
       qw.forEach(function (w) { if (fw.indexOf(w) >= 0) s += 1; });
       if (s > bestScore) { bestScore = s; best = f; }
@@ -217,15 +225,22 @@
   Chat.prototype.respond = function (text) {
     var t = text.toLowerCase(), num = parseFloat(t.replace(/[^0-9.]/g, ''));
     var f = this.flow;
+    // A question or anything that isn't a number leaves the measuring and pricing steps instead of repeating them.
+    var restart = /^(start over|cancel|stop)\b/.test(t);
+    if (restart || (f && (f.step === 'feet' || f.step === 'height') && !(num > 0))) {
+      this.flow = f = null;
+      if (restart) { this.say('No problem. What would you like to do?'); return this.setChips(['Help me measure', 'Choose my topper', 'Installation help', 'Get my price']); }
+    }
     if (f && f.step === 'feet') {
       if (num > 0) { f.feet = num; f.step = 'height';
         this.say('Got it, ' + num + ' ft. Which height do you want, from 12 to 24 in? Most people pick 18 in, which turns a 6 ft fence into 7 ft 6 in.');
         return this.setChips(['12 in', '18 in', '24 in']); }
-      return this.say('Please enter the total length in feet, for example 48.');
+      this.say('Please enter the total length in feet, for example 48.');
+      return this.setChips(['24', '48', '80', '120', 'Start over']);
     }
     if (f && f.step === 'height') {
       var h = num >= 12 && num <= 24 && num === Math.round(num) ? num : null;
-      if (!h) return this.say('Choose a whole number of inches from 12 to 24.');
+      if (!h) { this.say('Choose a whole number of inches from 12 to 24.'); return this.setChips(['12 in', '18 in', '24 in', 'Start over']); }
       f.height = h;
       var q = quote({ runs: [f.feet], height: h });
       store.set('draft', { runs: [f.feet], height: h, color: store.get('color', 'carbon') });
@@ -235,17 +250,18 @@
         'If your fence turns a corner or steps up or down, enter each part as its own run. <a href="' + link('/shop') + '">Open this in the price builder</a> to add your exact runs, pick a color and build your topper.');
       return this.setChips(['Choose my topper', 'Installation help', 'Talk to a person']);
     }
-    if (/help me measure|measur/.test(t) && !/how do i measure|guide/.test(t)) {
+    var isQuestion = /\?|^(how|what|why|when|where|should|can|do|does|is|are|will|which)\b/.test(t);
+    if (/help me measure/.test(t) || (/measur/.test(t) && !isQuestion && !/guide/.test(t))) {
       this.flow = { step: 'feet' };
       this.say('Let’s measure. Walk the fence you want to cover and measure each straight, level run, end post to end post. Skip gates. About how many feet is that in total?');
-      return this.setChips(['24', '48', '80', '120']);
+      return this.setChips(['24', '48', '80', '120', 'Start over']);
     }
-    if (/get my price|price|cost|quote|how much/.test(t)) {
+    if (/get my price/.test(t) || (/price|cost|quote|how much/.test(t) && !/ship/.test(t))) {
       this.flow = { step: 'feet' };
       this.say('I can price it now. How many feet of fence do you want to cover?');
-      return this.setChips(['24', '48', '80', '120']);
+      return this.setChips(['24', '48', '80', '120', 'Start over']);
     }
-    if (/choose my topper|choose|which|recommend/.test(t)) {
+    if (/choose my topper|which (height|colou?r|size)|recommend (a )?(height|colou?r)/.test(t) || (/choose|recommend/.test(t) && !/extender|extension|post/.test(t))) {
       this.say('Two choices: <strong>height</strong> and <strong>color</strong>. Height is any whole inch from 12 to 24. 18 in suits most 6 ft fences; go lower for a low sightline and higher to screen a deck or upstairs window. Carbon is our most popular color, Brown pairs well with cedar and Evergreen blends into planting. <a href="' + link('/visualizer') + '">Try them on a photo of your fence</a>.');
       return this.setChips(['What does 24 in look like?', 'Get my price', 'Will it sag?']);
     }

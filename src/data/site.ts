@@ -166,8 +166,23 @@ export const faqs = [
   },
   {
     q: 'How long does shipping take?',
-    a: 'Orders ship to your door in one box. Shipping times and costs are shown at checkout.',
+    a: `Orders ship to your door in one box. Shipping is free on orders over $${pricing.freeShippingOver}. We confirm your ship date when we send your final design to approve.`,
     tags: ['ship', 'shipping', 'delivery', 'arrive', 'deliver'],
+  },
+  {
+    q: 'How far apart should my posts be?',
+    a: `Space your extension posts no more than ${pricing.maxPostSpacingFt} ft apart. Each run needs a post at both ends, plus middle posts so no gap is longer than ${pricing.maxPostSpacingFt} ft. When you enter your posts in the Builder, we flag any gap that looks too long or too short and check it with you before we build.`,
+    tags: ['how far apart', 'apart', 'spacing', 'space between', 'distance between', 'how many posts', 'post spacing'],
+  },
+  {
+    q: 'Should I measure from the center of the post or the edge?',
+    a: 'It depends on whether your extension posts are in yet. If they’re installed, measure the gap between them, from the edge of one post to the edge of the next, at the height the topper will sit. If they’re not installed yet, mark where each post will go and measure center to center. The Builder asks which applies and labels each measurement.',
+    tags: ['center', 'centre', 'edge', 'inside', 'outside', 'center to center', 'edge to edge'],
+  },
+  {
+    q: 'Will it work on a sloped fence?',
+    a: 'Fences that follow a continuous slope aren’t supported yet. If your fence steps down in level sections, enter each level section as its own run, and the topper follows the steps. Not sure which you have? Send us a photo and we’ll tell you.',
+    tags: ['slope', 'sloped', 'sloping', 'hill', 'grade', 'uneven', 'step down', 'stepped'],
   },
   {
     q: 'Can I take it down for winter?',
