@@ -64,6 +64,50 @@ You're getting this because you saved a project at ${brand.domain}. The link wor
   return { subject, html, text };
 }
 
+// To the customer right after they submit for review: what we got and what happens next.
+export const NEXT_STEPS = [
+  'We check your measurements and photos, and message you if anything needs a second look.',
+  'We send you a final design and price to approve.',
+  'Once you approve and pay the deposit, we build your topper.',
+  'It ships to your door, with step-by-step install instructions.',
+];
+export function submittedEmail({ first, summary, estimate, open }) {
+  const subject = `We got your ${brand.name} project`;
+  const link = `${brand.url}/my-project`;
+  const html = layout({
+    preview: `${summary}. Here's what happens next.`,
+    body: `<p style="margin:0 0 14px;">Hi ${esc(first || 'there')},</p>
+<p style="margin:0 0 6px;">Thanks for submitting your project. Here’s what you sent:</p>
+<p style="margin:0 0 14px;font-weight:700;">${esc(summary)} · Estimate ${esc(estimate)}</p>
+${open ? `<p style="margin:0 0 14px;">You left ${esc(open)} for us to work out with you. That’s fine: we’ll ask before we build.</p>` : ''}
+<p style="margin:0 0 6px;font-weight:700;">What happens next</p>
+<ol style="margin:0 0 14px;padding-left:20px;">${NEXT_STEPS.map((s) => `<li style="margin:0 0 4px;">${esc(s)}</li>`).join('')}</ol>
+<p style="margin:0 0 14px;">Nothing is built or charged until you approve your final design.</p>
+${button(link, 'See my project')}
+<p style="margin:0 0 14px;">Questions? Just reply. A real person reads every email.</p>
+<p style="margin:0;">The ${esc(brand.name)} team</p>`,
+    footer: `You’re getting this because you submitted a project at ${esc(brand.domain)}.`,
+  });
+  const text = `Hi ${first || 'there'},
+
+Thanks for submitting your project. Here's what you sent:
+${summary} · Estimate ${estimate}
+${open ? `
+You left ${open} for us to work out with you. That's fine: we'll ask before we build.
+` : ''}
+What happens next:
+${NEXT_STEPS.map((s, i) => `${i + 1}. ${s.replace(/’/g, "'")}`).join('\n')}
+
+Nothing is built or charged until you approve your final design.
+
+See my project: ${link}
+
+Questions? Just reply. A real person reads every email.
+
+The ${brand.name} team`;
+  return { subject, html, text };
+}
+
 // To the customer when they ask for a new sign-in link from /my-project.
 export function signInEmail({ first, link }) {
   const subject = `Open your ${brand.name} project`;

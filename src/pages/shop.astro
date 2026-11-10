@@ -98,7 +98,7 @@ const offer = {
           </div>
         </div>)}
         {!features.preview && <div class="field"><label for="s-notes">Anything we should know? <span class="muted">(optional)</span></label><textarea id="s-notes" placeholder="Your extensions, post sizes, a slope, a gate"></textarea></div>}
-        <div class="hp" aria-hidden="true"><label for="s-company">Company</label><input id="s-company" type="text" tabindex="-1" autocomplete="off" /></div>
+        <div class="hp" aria-hidden="true"><label for="s-hp">Leave this field empty</label><input id="s-hp" type="text" tabindex="-1" autocomplete="off" data-1p-ignore data-lpignore="true" /></div>
         <label class="check" for="s-consent"><input id="s-consent" type="checkbox" /> <span>{features.preview ? 'Send me reminders about my project.' : 'Email me tips and offers.'}</span></label>
         <p class="field-error" id="details-error" role="alert" hidden></p>
         <button class="btn btn-primary btn-block" type="submit">{features.preview ? 'Send my code' : 'Save my project'}</button>

@@ -1,7 +1,8 @@
 // POST /api/submit { project_id, builder?, runs?, height?, color? }: the customer submits their project for review.
 // Only now does the team step in. The Builder sends its final project with the submit, so nothing is lost
 // between the last autosave and the tap.
-import { configured, json, readJson, db } from '../../server/lib.js';
+import { configured, json, readJson, db, sendEmail, summary, money } from '../../server/lib.js';
+import { submittedEmail } from '../../server/emails.js';
 import { projectAccess, notify, cleanBuilder, builderRows, EDITABLE } from '../../server/project.js';
 
 export async function onRequestPost({ request, env }) {
@@ -22,5 +23,12 @@ export async function onRequestPost({ request, env }) {
   if (!upd.ok) return json({ configured: true, error: 'We couldn’t submit that. Try again.' }, 502);
   const sent = { ...p, ...fields };
   await notify(env, 'submitted', sent, b.note ? String(b.note).slice(0, 2000) : '', builderRows(sent.builder));
+  const c = p.customers || {};
+  if (c.email) {
+    const open = Array.isArray(sent.builder && sent.builder.openAtSubmit) ? sent.builder.openAtSubmit.filter((x) => x && x.level === 'needed').length : 0;
+    try {
+      await sendEmail(env, { to: c.email, ...submittedEmail({ first: c.first, summary: summary(sent), estimate: money(sent.estimate_cents), open: open ? `${open} item${open === 1 ? '' : 's'}` : '' }) });
+    } catch (e) { console.error('submitted email failed', e && e.message); }
+  }
   return json({ configured: true, submitted: true, state: 'submitted' });
 }

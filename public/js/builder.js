@@ -57,7 +57,7 @@
   // Shop hands over the estimate in buildDraft. The project lives on this device (draftProject) until the
   // customer saves it in the panel. A new email then carries on right here with a project key; an email that
   // already has an account opens the emailed link, and adoptDraft() brings this work along.
-  var DRAFT = false, saveAsks = 0, sheet = document.getElementById('save-sheet');
+  var DRAFT = false, saveAsks = 0, askLater = false, sheetReason = '', submitAfterSave = false, sheet = document.getElementById('save-sheet');
   function startDraft() {
     var d = FT.store.get('buildDraft', null), kept = FT.store.get('draftProject', null);
     if (!d && !kept) { notFound('Start with your estimate', 'Enter your fence runs in Shop, then choose Build my Topper.'); return; }
@@ -69,9 +69,17 @@
     if (!(kept && kept.serverId)) askSave();
   }
   function sheetStep(name) { sheet.querySelectorAll('[data-step]').forEach(function (x) { x.hidden = x.dataset.step !== name; }); }
-  function askSave() {
+  // reason 'submit': they pressed Submit before saving, so the sheet says so and submits once saved.
+  function askSave(reason) {
     if (!sheet || sheet.open) return;
+    askLater = false;
+    if (p.serverId) { showCheck(reason); return; } // saved under an existing account: waiting for the emailed link
     saveAsks++;
+    sheetReason = reason || '';
+    var sub = sheetReason === 'submit';
+    document.getElementById('ps-title').textContent = sub ? 'Save your project to submit it' : 'Save your project to keep going';
+    sheet.querySelector('[data-ps-intro]').textContent = sub ? 'We’ll save your project and send it to our team for review. No payment now.' : 'Here’s your project. Save it, then add your posts, measurements and photos at your own pace. No payment now.';
+    sheet.querySelector('#ps-form button[type=submit]').textContent = saveLabel();
     var c = FT.store.get('contact', {}) || {};
     ['first', 'last', 'email', 'mobile'].forEach(function (k) { var el = document.getElementById('ps-' + k); if (!el.value) el.value = c[k] || ''; });
     sheet.querySelector('[data-ps-summary]').textContent = summaryLine();
@@ -79,6 +87,18 @@
     sheetStep('save');
     if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
     setTimeout(function () { var f = document.getElementById(c.first ? 'ps-email' : 'ps-first'); if (f) f.focus(); }, 50);
+  }
+  function saveLabel() { return sheetReason === 'submit' ? 'Save and submit' : 'Save and continue'; }
+  // The sheet's "check your email" step, shown after saving under an email that already has an account,
+  // and again whenever they try to submit or message us before opening the emailed link.
+  function showCheck(reason) {
+    var c = FT.store.get('contact', {}) || {};
+    sheet.querySelector('[data-ps-first]').textContent = c.first || p.first || '';
+    sheet.querySelector('[data-ps-email]').textContent = c.email || p.email || 'your email';
+    sheet.querySelector('[data-ps-submit-note]').hidden = reason !== 'submit';
+    sheet.querySelector('[data-ps-resent]').hidden = true;
+    sheetStep('check');
+    if (!sheet.open) { if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', ''); }
   }
   function closeSheet() { if (typeof sheet.close === 'function') sheet.close(); else sheet.removeAttribute('open'); }
   function summaryLine() {
@@ -88,6 +108,14 @@
   if (sheet) {
     sheet.querySelector('[data-ps-later]').addEventListener('click', closeSheet);
     sheet.querySelector('[data-ps-close]').addEventListener('click', closeSheet);
+    sheet.querySelector('[data-ps-resend]').addEventListener('click', function () {
+      var btn = this, note = sheet.querySelector('[data-ps-resent]'), c = FT.store.get('contact', {}) || {};
+      btn.disabled = true;
+      FT.api('/api/login', { body: { email: c.email || p.email } }).then(function (res) {
+        btn.disabled = false; note.hidden = false;
+        note.textContent = res.ok ? 'Sent. Check your inbox, and your spam folder if it isn’t there in a minute.' : 'We couldn’t send that. Try again in a minute.';
+      }, function () { btn.disabled = false; note.hidden = false; note.textContent = 'We couldn’t send that. Check your connection and try again.'; });
+    });
     sheet.addEventListener('click', function (e) { if (e.target === sheet && !sheet.querySelector('[data-step="save"]').hidden) closeSheet(); });
     document.getElementById('ps-form').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -101,9 +129,9 @@
       var d = FT.store.get('buildDraft', null) || {}, ext = d.extender;
       FT.api('/api/projects', { body: {
         first: c.first, last: c.last, email: c.email, mobile: c.mobile, notes: '', marketing: document.getElementById('ps-consent').checked,
-        runs: payload().runs, height: p.height, color: p.color, extender: ext ? { id: ext.id, name: ext.name } : null, company: v('company'),
+        runs: payload().runs, height: p.height, color: p.color, extender: ext ? { id: ext.id, name: ext.name } : null, company: v('hp'),
       } }).then(function (res) {
-        btn.disabled = false; btn.textContent = 'Save and continue';
+        btn.disabled = false; btn.textContent = saveLabel();
         var j = res.data || {};
         if (!(res.ok && j.saved && j.projectId)) { err.textContent = j.error || 'We couldn’t save that. Check your connection and try again.'; err.hidden = false; return; }
         var saved = FT.store.get('projects', []) || [];
@@ -115,6 +143,7 @@
           p.id = j.projectId; p.first = c.first; p.last = c.last; p.email = c.email; delete p.draftAt; if (p.name === 'My fence') p.name = c.last + ' fence';
           history.replaceState(null, '', '#p=' + encodeURIComponent(p.id) + '&s=' + stage + (stage === 'run' ? '&r=' + runIdx : ''));
           closeSheet(); render(); persist(); // sends anything answered before saving
+          if (sheetReason === 'submit' && submitAfterSave) { var ok = document.getElementById('review-ok'); if (ok) ok.checked = true; submit(); return; }
           FT.toast('Saved. Keep going whenever you like.');
           return;
         }
@@ -123,8 +152,10 @@
         sheet.querySelector('[data-ps-email]').textContent = c.email;
         sheet.querySelector('[data-ps-sent]').hidden = !j.emailSent;
         sheet.querySelector('[data-ps-failed]').hidden = !!j.emailSent;
+        sheet.querySelector('[data-ps-submit-note]').hidden = sheetReason !== 'submit';
+        sheet.querySelector('[data-ps-resent]').hidden = true;
         sheetStep('check'); render();
-      }, function () { btn.disabled = false; btn.textContent = 'Save and continue'; err.textContent = 'We couldn’t save that. Check your connection and try again.'; err.hidden = false; });
+      }, function () { btn.disabled = false; btn.textContent = saveLabel(); err.textContent = 'We couldn’t save that. Check your connection and try again.'; err.hidden = false; });
     });
   }
 
@@ -429,15 +460,23 @@
     var key = r.id + '-' + k, showSpec = mustSpec || openPost[key] || !!post.spec;
     var base = 'run.' + i + '.posts.' + k;
     var specLine = S.extStatus === 'undecided' ? 'Size to come once you choose an extension'
+      : openPost[key] && !post.spec ? 'Describe this post'
       : spec && spec.shape && spec.size ? P.sizeLabel(spec) + (post.spec ? ' (different from your other posts)' : ' (same as your other posts)')
       : post.spec ? 'Describe this post' : 'Size from the project overview, not set yet';
     return '<li class="seq-post' + (end ? ' end' : '') + '" id="run-' + i + '-post-' + k + '"><span class="seq-dot" aria-hidden="true"></span><div class="seq-body">' +
       '<div class="seq-head"><h4>' + postName(r, k) + ' post</h4>' + (!end && editable() ? '<button type="button" class="why-link danger" data-rm-post="' + k + '">Remove</button>' : '') + '</div>' +
-      (end ? '<div class="field"><span class="label">What’s at this end?</span>' + chips(base + '.kind', post.kind || 'end', KINDS) + (post.kind === 'corner' ? '<span class="hint">This post is shared with the next run. Measure each run from the center of a shared post.</span>' : '') + '</div>' : '') +
+      (end ? '<div class="field"><span class="label">What’s at this end?</span>' + chips(base + '.kind', post.kind || 'end', KINDS) + (post.kind === 'corner' ? '<span class="hint">This post is shared with the ' + (k === 0 ? 'previous' : 'next') + ' run. ' + (P.method(p) === 'gap' ? 'Measure to the edge of the corner post, like your other gaps.' : 'Measure to the center of the corner post.') + '</span>' : '') + '</div>' : '') +
       '<p class="spec-line">' + esc(specLine) + '</p>' +
       (showSpec && S.extStatus !== 'undecided' ? specEditor(base + '.spec', post.spec || {}) + (post.spec && !mustSpec ? '<button type="button" class="why-link" data-same-post="' + k + '">Same as my other posts</button>' : '')
         : editable() && S.extStatus !== 'undecided' ? '<button type="button" class="why-link" data-odd-post="' + key + '">This post is different</button>' : '') +
       '</div></li>';
+  }
+  function gapHint(q) {
+    var w = P.gapWarning(q), maxFt = (window.FT_PRICING || {}).maxPostSpacingFt || 15;
+    if (!w) return '';
+    return '<p class="hint warn-hint" role="status">' + (w.indexOf('over') === 0
+      ? 'That’s longer than usual. Most toppers need a post at least every ' + maxFt + ' ft. Double-check it, or add a post here. We’ll review it with you either way.'
+      : 'That’s a very short gap. Double-check it. We’ll review it with you either way.') + '</p>';
   }
   function spanBlock(r, i, k) {
     var m = P.method(p), unsure = !!r.unsure[k];
@@ -446,6 +485,7 @@
     return '<li class="seq-span' + (r.spans[k] > 0 ? ' set' : '') + (needs ? (unsure ? ' unsure' : ' needs') : '') + '" id="run-' + i + '-spanrow-' + k + '"><span class="seq-line" aria-hidden="true"></span><div class="seq-body">' +
       '<span class="label">' + (m === 'gap' ? 'Gap' : 'Center to center') + ': ' + postName(r, k) + ' → ' + postName(r, k + 1) + (needs ? ' <span class="needs-tag">' + (unsure ? 'Not sure yet' : 'Still needed') + '</span>' : '') + '</span>' +
       mi('run-' + i + '-span-' + k, r.spans[k] || 0, legend) +
+      gapHint(r.spans[k]) +
       '<label class="check small" for="run-' + i + '-unsure-' + k + '"><input id="run-' + i + '-unsure-' + k + '" type="checkbox" data-unsure="' + k + '"' + (unsure ? ' checked' : '') + dis() + ' /> <span>Not sure yet</span></label>' +
       (editable() ? '<button type="button" class="add-post" data-add-post="' + (k + 1) + '"><span aria-hidden="true">+</span> Add a post here</button>' : '') +
       '</div></li>';
@@ -456,12 +496,18 @@
     var seq = '';
     r.posts.forEach(function (_, k) { seq += postBlock(r, i, k); if (k < r.posts.length - 1) seq += spanBlock(r, i, k); });
     var ext = P.runExtender(p, r);
-    var more = '<details class="panel run-more" id="run-' + i + '-more"' + (S.sameHeight === 'no' || r.extender || r.notes ? ' open' : '') + '><summary>More for this run</summary><div class="run-more-body">' +
+    var more = '<details class="panel run-more" id="run-' + i + '-more"' + (i === 0 || S.sameHeight === 'no' || r.extender || r.notes || Object.keys(r.photos || {}).length ? ' open' : '') + '><summary>Photos, notes and more for this run</summary><div class="run-more-body">' +
       (S.sameHeight === 'no' ? '<div class="field"><label for="run-' + i + '-height">Topper height for this run</label><select id="run-' + i + '-height" data-bind="run.' + i + '.height" data-num' + dis() + '>' +
         HEIGHTS.map(function (h) { return '<option value="' + h + '"' + (h === P.runHeight(p, r) ? ' selected' : '') + '>' + h + ' in</option>'; }).join('') + '</select></div>' : '') +
       '<div class="field"><label for="run-' + i + '-ext">Fence extension on this run</label><select id="run-' + i + '-ext" data-bind="run.' + i + '.extender" data-nullable' + dis() + '>' +
         '<option value="">Same as the rest of the project' + (S.extender && extById(S.extender) ? ' (' + esc(extById(S.extender).name) + ')' : '') + '</option>' +
-        EXT.map(function (o) { return '<option value="' + o.id + '"' + (r.extender === o.id ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select>' +
+        (function () { // extensions that fit the posts they told us about come first; the rest sit apart
+          var b0 = P.BASES.filter(function (x) { return x.id === S.base; })[0], fit = b0 && b0.recommend && b0.recommend.length ? b0.recommend.concat(['custom']) : null;
+          var opt = function (o) { return '<option value="' + o.id + '"' + (r.extender === o.id ? ' selected' : '') + '>' + esc(o.name) + '</option>'; };
+          if (!fit) return EXT.map(opt).join('');
+          return EXT.filter(function (o) { return fit.indexOf(o.id) >= 0; }).map(opt).join('') +
+            '<optgroup label="For other kinds of posts">' + EXT.filter(function (o) { return fit.indexOf(o.id) < 0; }).map(opt).join('') + '</optgroup>';
+        })() + '</select>' +
         (r.extender ? '<span class="hint">' + fitTag(r.extender) + ' ' + FIT[(P.EXT_FIT[r.extender] || {}).fit || 'review'][3] + '</span>' : '') + '</div>' +
       '<div class="field"><span class="label">Photos <span class="muted">(recommended)</span></span><p class="hint">Photos help us catch problems before we build.</p><ul class="photo-grid">' +
         P.photoSlots(r).map(function (sl) { return photoSlot('run.' + i + '.photos.' + sl.id, sl.name, r.photos[sl.id]); }).join('') + '</ul></div>' +
@@ -490,13 +536,15 @@
     return '<nav class="run-switch" aria-label="Your runs"><ol>' + p.runs.map(function (r, k) {
       var n = runOpen(r);
       return '<li><button type="button" data-open-run="' + k + '"' + (k === i ? ' aria-current="page"' : '') + '><span class="rs-name">' + esc(r.name) + '</span>' +
-        (n ? '<span class="rs-count" aria-label="' + n + ' still needed">' + n + '</span>' : '<span class="rs-done" aria-label="nothing needed">✓</span>') + '</button></li>';
+        (n ? '<span class="rs-count" aria-label="' + n + ' still needed">' + n + ' to do</span>' : '<span class="rs-done" aria-label="nothing needed">✓</span>') + '</button></li>';
     }).join('') + '</ol></nav>';
   }
   // "Checklist: Items still needed" for this run, each item a link to the field, plus a pointer to project questions.
   function runChecklist(i) {
     var r = p.runs[i], items = [];
     r.spans.forEach(function (x, k) {
+      var what0 = postName(r, k) + ' → ' + postName(r, k + 1), warn = P.gapWarning(x);
+      if (warn) items.push({ label: 'Double-check ' + what0 + ' (' + warn + ')', field: 'run-' + i + '-spanrow-' + k });
       if (x > 0) return;
       var what = postName(r, k) + ' → ' + postName(r, k + 1);
       items.push({ label: r.unsure[k] ? 'Confirm ' + what + ' (marked not sure)' : 'Measure ' + what, field: 'run-' + i + '-spanrow-' + k });
@@ -566,7 +614,7 @@
   }
   function reviewStage(req) {
     var s = p.shipping, ship = P.shippingDone(p);
-    var html = (editable() ? '<section class="stage-intro"><span class="eyebrow">Step 3 of 3</span><h2>Review and submit</h2><p class="muted">Check everything once. We review every project before we build, then send you a final design and price to approve.</p></section>'
+    var html = (editable() ? '<section class="stage-intro"><span class="eyebrow">Step 2 of 2</span><h2>Review and submit</h2><p class="muted">Check everything once. We review every project before we build, then send you a final design and price to approve.</p></section>'
       : '<section class="stage-intro"><h2>What you sent us</h2><p class="muted">We review every project before we build, then send you a final design and price to approve.</p></section>') +
       (editable() ? openItems(req) : '') + projectSummary() + p.runs.map(runReview).join('');
     if (!editable()) return html;
@@ -576,7 +624,7 @@
       textField('shipping.zip', 'ZIP code', s.zip, { auto: 'postal-code', inputmode: 'numeric' }) + '</div></section>' +
       '<section class="panel submit-card" id="submit"><h3>Submit for review</h3>' +
       '<p>No payment now. You’ll approve your final design and price first, and pay after that.</p>' +
-      (req.needed ? '<p class="muted">' + plural(req.needed, 'item') + ' above still ' + (req.needed === 1 ? 'needs an answer' : 'need answers') + '. We’ll contact you about them before we build.</p>' : '') +
+      (req.needed ? '<p class="muted">' + plural(req.needed, 'item') + ' above still ' + (req.needed === 1 ? 'needs an answer' : 'need answers') + '. We’ll contact you about ' + (req.needed === 1 ? 'it' : 'them') + ' before we build.</p>' : '') +
       '<label class="check" for="review-ok"><input id="review-ok" type="checkbox" /> <span>These measurements and details are correct to the best of my knowledge.</span></label>' +
       '<p class="field-error" id="review-error" role="alert" hidden></p>' +
       '<button type="button" class="btn btn-primary btn-block" data-submit>Submit for review</button></section>';
@@ -592,7 +640,7 @@
       '<dt>Panels <span class="muted">(' + e.panels + ' × ' + FT.money(e.rates.perPanel) + ')</span></dt><dd>' + FT.money(e.build) + '</dd>' +
       '<dt>Shipping</dt><dd>' + (e.freeShipping ? 'Free' : 'With your design') + '</dd>' +
       '<dt class="total">' + (final ? 'Final price' : 'Estimated total') + '</dt><dd class="total">' + FT.money(final ? p.finalDesign.price : e.total) + '</dd></dl>' +
-      '<p class="hint">' + (final ? 'Design version ' + p.finalDesign.version + '.' : 'Updates as you measure. Your final price comes with your design.') + ' Rates version ' + e.rateVersion + '.</p></section>';
+      '<p class="hint">' + (final ? 'Design version ' + p.finalDesign.version + '.' : 'Updates as you measure. Your final price comes with your design.') + '</p></section>';
   }
   function sideNeeded(req) {
     if (!editable()) return '';
@@ -611,8 +659,18 @@
   ];
   function questionsTab() {
     var qs = p.questions.filter(function (q) { return !q.answered; });
-    var html = '<section class="panel"><h2>Questions</h2>';
-    if (!qs.length) html += '<p class="muted">We’re reviewing your project. We’ll message you if we need anything.</p>';
+    var html = '';
+    if (p.state === 'submitted') {
+      var c = FT.store.get('contact', {}) || {}, mail = p.email || c.email;
+      html += '<section class="panel submitted-panel"><span class="eyebrow">Submitted</span><h2>Thanks, we have your project</h2>' +
+        '<p>' + (mail ? 'We’ve emailed a copy to <strong>' + esc(mail) + '</strong>. ' : '') + 'Nothing is built or charged until you approve your final design.</p>' +
+        '<h3>What happens next</h3><ol class="next-steps">' +
+        ['We check your measurements and photos, and message you here if anything needs a second look.', 'We send you a final design and price to approve.', 'Once you approve and pay the deposit, we build your topper.', 'It ships to your door, with step-by-step install instructions.']
+          .map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>' +
+        '<p class="hint">Need to change something? <button type="button" class="why-link" data-tab-go="messages">Send us a message</button>. Your project reference is ' + esc(String(p.id).slice(0, 8).toUpperCase()) + '.</p></section>';
+    }
+    html += '<section class="panel"><h2>Questions</h2>';
+    if (!qs.length) html += '<p class="muted">No questions from us yet. We’ll message you here and by email if we need anything.</p>';
     qs.forEach(function (q) {
       var k = p.questions.indexOf(q);
       html += '<div class="question"><span class="eyebrow">Question from FenceTopper' + (q.run != null && p.runs[q.run] ? ' · ' + esc(p.runs[q.run].name) : '') + (q.field ? ' · ' + esc(q.field) : '') + '</span><p>' + esc(q.text) + '</p>' +
@@ -681,6 +739,8 @@
   }
   function render() {
     var active = document.activeElement && root.contains(document.activeElement) ? document.activeElement.id : null;
+    var caret = null; // keep the cursor where it was in a text box, so a re-render never scrambles typing
+    try { if (active && typeof document.activeElement.selectionStart === 'number') caret = [document.activeElement.selectionStart, document.activeElement.selectionEnd]; } catch (e) {}
     var req = P.requirements(p);
     var t = TABS.filter(function (x) { return x[0] === tab; })[0];
     if (!t[2]()) tab = 'build';
@@ -711,11 +771,12 @@
         '<section class="panel b-help"><h2>Need a hand?</h2><p class="muted">Ask about any step, or send photos and we’ll help.</p><button class="btn btn-outline btn-block" type="button" data-chat-open data-chat-prompt="Help me with my project">Ask FenceTopper</button></section></aside>' +
       '</div>' + stickyBar(req);
     rendering = false;
-    if (active) { var el = document.getElementById(active); if (el) el.focus({ preventScroll: true }); }
+    if (active) { var el = document.getElementById(active); if (el) { el.focus({ preventScroll: true }); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} } }
   }
   function go(s, i) {
     stage = s; if (i != null) runIdx = i;
     editingQ = null; armedDelete = null;
+    if (askLater && DRAFT) setTimeout(function () { askSave(); }, 400);
     history.replaceState(null, '', '#p=' + encodeURIComponent(p.id) + '&s=' + stage + (stage === 'run' ? '&r=' + runIdx : ''));
     render();
     window.scrollTo({ top: Math.max(0, root.offsetTop - 70), behavior: 'smooth' });
@@ -725,7 +786,10 @@
   function persist() {
     if (DRAFT) {
       FT.store.set('draftProject', p);
-      if (saveAsks === 1 && !p.serverId) askSave(); // they chose Look around first: ask once more at their first answer
+      if (saveAsks === 1 && !p.serverId) { // they chose Look around first: ask once more at their first answer
+        if (typing || isTextField(document.activeElement)) askLater = true; // never pop up mid-typing; ask when they move on
+        else askSave();
+      }
       return;
     }
     clearTimeout(saveTimer);
@@ -759,7 +823,7 @@
   function sendMessage(text, run, done) {
     var at = new Date().toISOString();
     if (!LIVE) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
-    if (DRAFT) { askSave(); done(false); return; }
+    if (DRAFT) { askSave('message'); done(false); return; }
     var about = run != null && p.runs[run] ? 'About ' + p.runs[run].name + ': ' : '';
     FT.api('/api/messages', { auth: true, body: { project_id: p.id, body: about + text } }).then(function (res) {
       if (res.ok) { p.messages.push({ who: 'You', text: text, at: at, run: run }); done(true); return; }
@@ -767,6 +831,18 @@
     }, function () { FT.toast('We couldn’t send that. Check your connection and try again.'); done(false); });
   }
   function rerender() { setTimeout(render, 0); }
+  // A corner is one post shared by two runs: marking a run's last post a corner makes the next run's first
+  // post a corner too (and the other way round), unless that end was already set to something else.
+  function linkCorner(path, v) {
+    var m = path.match(/^run\.(\d+)\.posts\.(\d+)\.kind$/); if (!m || v !== 'corner') return;
+    var i = +m[1], k = +m[2], r = p.runs[i], other = null;
+    if (k === r.posts.length - 1 && p.runs[i + 1]) other = p.runs[i + 1].posts[0];
+    else if (k === 0 && p.runs[i - 1]) other = p.runs[i - 1].posts[p.runs[i - 1].posts.length - 1];
+    if (other && (!other.kind || other.kind === 'end')) {
+      other.kind = 'corner';
+      FT.toast((k === 0 ? p.runs[i - 1].name + ' now ends' : p.runs[i + 1].name + ' now starts') + ' at this corner.');
+    }
+  }
   function refreshRunLive(i) {
     var r = p.runs[i], d = root.querySelector('[data-drawing="' + i + '"]'), t = root.querySelector('[data-totals="' + i + '"]');
     if (d) d.innerHTML = runDrawing(r, i);
@@ -775,6 +851,13 @@
   }
 
   // ---------- Events ----------
+  // Set while an event from a text box is being handled, so the save sheet never opens over someone's typing.
+  var typing = false;
+  function isTextField(a) { return !!a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /^(text|number|email|tel|search|url)$/.test(a.type))); }
+  root.addEventListener('input', function (ev) { typing = isTextField(ev.target); }, true);
+  root.addEventListener('change', function (ev) { typing = isTextField(ev.target); }, true);
+
+
   root.addEventListener('input', function (ev) {
     var t = ev.target, fs = t.closest('[data-mi]');
     if (fs) {
@@ -812,6 +895,7 @@
       var b = t.dataset.bind, v = t.type === 'checkbox' ? t.checked : t.hasAttribute('data-num') ? Number(t.value) : t.hasAttribute('data-nullable') && !t.value ? null : t.value;
       if (/\.spec\.shape$/.test(b) || /^setup\.post\.shape$/.test(b)) setPath(b.replace(/shape$/, 'size'), ''); // new shape, new size list
       setPath(b, v);
+      linkCorner(b, v);
       onAnswer(b, v);
       // Typing or picking from a list keeps that question open until Next; a tap on an option can move on.
       var qc = t.closest('.q-card'); if (qc && t.type !== 'radio') editingQ = qc.id;
@@ -883,21 +967,32 @@
       var q = readMi(root.querySelector('[data-mi="new-run"]')) || 48 * 15;
       var nr = P.blankRun(q, 'Run ' + (p.runs.length + 1)); p.runs.push(nr); addingRun = false; persist(); go('run', p.runs.length - 1); return;
     }
+    // Changing posts can drop a measurement. Say so, and offer Undo.
+    function keepUndo(lost) {
+      var snap = { posts: r.posts.slice(), spans: r.spans.slice(), unsure: r.unsure.slice() }, ri = runIdx;
+      return function () {
+        if (!lost) return;
+        FT.toast(lost, { label: 'Undo', run: function () { var rr = p.runs[ri]; if (!rr) return; rr.posts = snap.posts; rr.spans = snap.spans; rr.unsure = snap.unsure; persist(); render(); } });
+      };
+    }
     if (d.mid) {
+      var lastGap = r.spans[r.spans.length - 1], tellMid = keepUndo(+d.mid < 0 && lastGap > 0 ? 'Removed a post. The last gap (' + fmtQin(lastGap) + ') needs measuring again.' : null);
       if (+d.mid > 0) { r.posts.splice(r.posts.length - 1, 0, { id: P.uid(), spec: null }); r.spans.push(null); }
       else if (r.posts.length > 2) { r.posts.splice(r.posts.length - 2, 1); r.spans.splice(r.spans.length - 1, 1); r.unsure.splice(r.spans.length, 1); }
-      persist(); render(); return;
+      persist(); render(); tellMid(); return;
     }
     if (d.addPost) {
       var k = +d.addPost; // new post goes between post k-1 and post k; the span it splits needs measuring again
+      var was = r.spans[k - 1], tellAdd = keepUndo(was > 0 ? 'Added a post. Measure both new gaps (the old gap was ' + fmtQin(was) + ').' : null);
       r.posts.splice(k, 0, { id: P.uid(), spec: null }); r.spans.splice(k - 1, 1, null, null); r.unsure.splice(k - 1, 1, false, false);
-      persist(); render(); focusIn('run-' + runIdx + '-post-' + k); return;
+      persist(); render(); focusIn('run-' + runIdx + '-post-' + k); tellAdd(); return;
     }
     if (d.rmPost) {
       var k2 = +d.rmPost; // merging two spans: keep their sum when both are known
       var a = r.spans[k2 - 1], c = r.spans[k2], merged = a > 0 && c > 0 && P.method(p) === 'center' ? a + c : null;
+      var tellRm = keepUndo(!merged && (a > 0 || c > 0) ? 'Removed a post. Measure the new, longer gap.' : null);
       r.posts.splice(k2, 1); r.spans.splice(k2 - 1, 2, merged); r.unsure.splice(k2 - 1, 2, false);
-      persist(); render(); return;
+      persist(); render(); tellRm(); return;
     }
     if (d.oddPost) { openPost[d.oddPost] = true; render(); return; }
     if (d.samePost) { r.posts[+d.samePost].spec = null; openPost[r.id + '-' + d.samePost] = false; persist(); render(); return; }
@@ -962,10 +1057,12 @@
     }, 30);
   }
   function submit() {
-    if (DRAFT) { askSave(); return; }
     var err = document.getElementById('review-error');
-    if (!P.shippingDone(p)) { err.textContent = 'Add your shipping address so we can include shipping in your final price.'; err.hidden = false; focusIn('shipping'); return; }
+    var shipBad = P.shippingProblem(p);
+    if (shipBad) { err.textContent = shipBad; err.hidden = false; focusIn('shipping'); return; }
     if (!document.getElementById('review-ok').checked) { err.textContent = 'Please confirm your measurements to submit.'; err.hidden = false; document.getElementById('review-ok').focus(); return; }
+    err.hidden = true;
+    if (DRAFT) { submitAfterSave = true; askSave('submit'); return; }
     var req = P.requirements(p);
     p.openAtSubmit = req.items.map(function (x) { return { level: x.level, label: x.label }; });
     P.recordEstimate(p, 'Submitted'); P.log(p, 'You', 'Submitted for review' + (req.needed ? ' with ' + plural(req.needed, 'open item') : ''));

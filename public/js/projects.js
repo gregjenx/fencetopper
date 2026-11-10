@@ -205,17 +205,37 @@
       if (missing) add('needed', r.name + ': ' + missing + ' measurement' + (missing === 1 ? '' : 's') + ' to enter', i, 'run-' + i + '-seq');
       if (unsure) add('needed', r.name + ': ' + unsure + ' measurement' + (unsure === 1 ? '' : 's') + ' marked “not sure”', i, 'run-' + i + '-seq');
       var odd = r.posts.filter(function (x) { return x.spec && !(x.spec.shape && x.spec.size); }).length;
+      var odd2 = r.spans.filter(function (x) { return gapWarning(x); }).length;
+      if (odd2) add('review', r.name + ': ' + odd2 + ' gap' + (odd2 === 1 ? '' : 's') + ' to double-check', i, 'run-' + i + '-seq');
       if (odd) add('needed', r.name + ': size of ' + odd + ' post' + (odd === 1 ? '' : 's') + ' marked different', i, 'run-' + i + '-seq');
       if (r.extender && E(r.extender).fit === 'review') add('review', r.name + ': custom extension review', i, 'run-' + i + '-more');
     });
     var needed = items.filter(function (x) { return x.level === 'needed'; }).length;
     return { items: items, needed: needed, review: items.length - needed, open: needed };
   }
+  // A measured gap that looks wrong: longer than our post spacing allows, or too short to be a real gap.
+  // Spans are in quarter inches. Returns a short reason, or '' when the gap looks normal. Never blocks.
+  function gapWarning(q) {
+    if (!(q > 0)) return '';
+    var maxFt = (window.FT_PRICING || {}).maxPostSpacingFt || 15;
+    if (q > maxFt * 48) return 'over ' + maxFt + ' ft';
+    if (q < 24 * 4) return 'under 2 ft';
+    return '';
+  }
   function extName(id) { var o = (window.FT_EXTENDERS || []).filter(function (x) { return x.id === id; })[0]; return o ? o.name : id; }
   function photoSlots() {
     return [{ id: 'overview', name: 'Whole run', req: 'Recommended' }, { id: 'left', name: 'Left end post', req: 'Recommended' }, { id: 'right', name: 'Right end post', req: 'Recommended' }, { id: 'other', name: 'Anything unusual', req: 'Optional' }];
   }
-  function shippingDone(p) { var s = p.shipping; return !!(s.name && s.street && s.city && s.state && s.zip); }
+  var ZIP_RE = /^\d{5}(-?\d{4})?$/;
+  function shippingDone(p) { var s = p.shipping; return !!(s.name && s.street && s.city && s.state && ZIP_RE.test(String(s.zip || '').trim())); }
+  // What's wrong with the shipping address, in words, or '' when it's complete.
+  function shippingProblem(p) {
+    var s = p.shipping || {}, labels = { name: 'full name', street: 'street address', city: 'city', state: 'state', zip: 'ZIP code' };
+    var missing = Object.keys(labels).filter(function (k) { return !String(s[k] || '').trim(); }).map(function (k) { return labels[k]; });
+    if (missing.length) return 'Add your ' + (missing.length > 1 ? missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1] : missing[0]) + ' so we know where to send your topper.';
+    if (!ZIP_RE.test(String(s.zip).trim())) return 'Check your ZIP code. It should be 5 digits, like 78701.';
+    return '';
+  }
 
   // ---------- Estimate with the active rates, recorded with its rate version ----------
   function estimate(p) {
@@ -293,7 +313,7 @@
   applyActiveRates();
   FT.projects = {
     STATES: STATES, stateAtLeast: stateAtLeast, all: all, get: get, save: save, log: log, normalize: normalize,
-    requirements: requirements, photoSlots: photoSlots, estimate: estimate, recordEstimate: recordEstimate, shippingDone: shippingDone,
+    requirements: requirements, photoSlots: photoSlots, estimate: estimate, recordEstimate: recordEstimate, shippingDone: shippingDone, shippingProblem: shippingProblem, gapWarning: gapWarning,
     BASES: BASES, EXT_FIT: EXT_FIT, POST_SIZES: POST_SIZES, sizeLabel: sizeLabel, method: method, postSpec: postSpec, runLength: runLength,
     runHeight: runHeight, runColor: runColor, runExtender: runExtender, blankRun: blankRun, extName: extName, uid: uid,
     rateSchedule: rateSchedule, activeRates: activeRates, addRateVersion: addRateVersion, applyActiveRates: applyActiveRates, RATE_FIELDS: RATE_FIELDS, today: today,

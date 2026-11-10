@@ -18,7 +18,8 @@ const KEY_DAYS = 30;
 export async function onRequestPost({ request, env }) {
   if (!configured(env)) return json({ configured: false }, 503);
   const body = await readJson(request);
-  if (body && body.company) return json({ configured: true, saved: true }); // honeypot: bots fill every field
+  // Honeypot: bots fill every field. The field is hidden and not named like anything autofill knows.
+  if (body && body.company) { console.warn('save dropped by honeypot'); return json({ configured: true, saved: true }); }
   const { value: p, error } = cleanProject(body);
   if (error) return json({ configured: true, error }, 400);
 
