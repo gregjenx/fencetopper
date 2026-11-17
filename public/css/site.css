@@ -53,7 +53,7 @@
   --info-bg: #e3ecf5;    --info-ink: #1f4e79;    --info-mark: #1f4e79;    /* staff review, in production, AI source label */
 
   /* ---- Color: logo ---- */
-  --logo-box: #12482b;  --logo-mark: #ffffff;  --logo-fence: #16202f;  --logo-topper: #0b3520;
+  --logo-box: #12482b;  --logo-mark: #ffffff;  --logo-fence: #16202f;  --logo-topper: #12482b;
 
   /* ---- Color: product swatches (fixed, never themed) ---- */
   --swatch-carbon: #3a3c3f;
@@ -212,11 +212,14 @@ p { margin: 0; }
 .announce a:hover span { text-decoration-thickness: 2px; }
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .site-header .header-bar { display: flex; align-items: center; gap: 12px; min-height: 64px; }
-.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 1.45rem/1 var(--font-display); letter-spacing: -0.03em; }
-.logo-svg { display: block; height: 34px; width: auto; }
-.site-footer .logo-svg { height: 30px; }
+/* Logo lockup: mark and name scale together in em. Set only font-size to resize. */
+.logo { display: inline-flex; align-items: center; gap: 0.38em; font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -0.03em; line-height: 1; white-space: nowrap; text-decoration: none; }
+@media (max-width: 859px) { .logo { font-size: 24px; } }
+.site-footer .logo { font-size: 21px; }
+.logo .logo-mark { display: block; height: 1.3em; width: 1.612em; flex: none; }
+.logo-fence { color: var(--logo-fence); } .logo-topper { color: var(--logo-topper); }
+/* Old boxed FT, still used in the chat headers */
 .ft-box { fill: var(--logo-box); } .ft-mark { fill: var(--logo-mark); }
-.ft-fence { fill: var(--logo-fence); } .ft-topper { fill: var(--logo-topper); }
 .logo-mark { display: block; width: 40px; height: auto; }
 .logo-mark.on-green .ft-box { fill: #ffffff; } .logo-mark.on-green .ft-mark { fill: #12482b; }
 .main-nav { display: none; margin-left: auto; gap: 4px; }
